@@ -1,0 +1,8 @@
+#idea files
+out/
+.idea
+lessons.iml
+
+#compiled javadoc
+javadoc
+
