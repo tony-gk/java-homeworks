@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd ..
+javac -d . ../modules/info/kgeorgiy/java/advanced/implementor/*.java &&
+javac -d . ../modules/ru/ifmo/rain/gunkin/implementor/*.java &&
+java -cp . -p . -m info.kgeorgiy.java.advanced.implementor advanced ru.ifmo.rain.gunkin.implementor.Implementor "$1"
