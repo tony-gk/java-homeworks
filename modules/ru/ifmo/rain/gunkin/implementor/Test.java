@@ -7,7 +7,7 @@ import java.nio.file.Paths;
 public class Test {
     public static void main(String[] args) throws ImplerException {
         Implementor implementor = new Implementor();
-        implementor.implement(Exception.class, Paths.get("/home/tony/study/java/lessons/avot"));
+        implementor.implementJar(Exception.class, Paths.get("/home/tony/study/java/lessons/avot.jar"));
 
     }
 }
