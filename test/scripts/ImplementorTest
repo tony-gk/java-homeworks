@@ -4,7 +4,6 @@ cd ..
 find ../modules/info/kgeorgiy/java/advanced/implementor/ -name "*.java" > sources.txt
 javac -d . @sources.txt &&
 javac -d . ../modules/ru/ifmo/rain/gunkin/implementor/*.java &&
-
 java -cp . -p . -m info.kgeorgiy.java.advanced.implementor jar-interface ru.ifmo.rain.gunkin.implementor.Implementor "$1"
 
 rm sources.txt
