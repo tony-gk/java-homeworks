@@ -5,7 +5,7 @@ import java.util.ResourceBundle;
 import java.util.function.Supplier;
 
 /**
- * Copy of {@link java.lang.System.Logger}
+ * Copy of {@link System.Logger}
  */
 public interface Logger {
 
@@ -20,8 +20,8 @@ public interface Logger {
      * <br>
      * {@link #ALL} and {@link #OFF}
      * are simple markers with severities mapped respectively to
-     * {@link java.lang.Integer#MIN_VALUE Integer.MIN_VALUE} and
-     * {@link java.lang.Integer#MAX_VALUE Integer.MAX_VALUE}.
+     * {@link Integer#MIN_VALUE Integer.MIN_VALUE} and
+     * {@link Integer#MAX_VALUE Integer.MAX_VALUE}.
      * <p>
      * <b>Severity values and Mapping to {@code java.util.logging.Level}.</b>
      * <p>
@@ -54,8 +54,8 @@ public interface Logger {
      *
      * @since 9
      *
-     * @see java.lang.System.LoggerFinder
-     * @see java.lang.System.Logger
+     * @see System.LoggerFinder
+     * @see System.Logger
      */
     public enum Level {
 
@@ -157,8 +157,8 @@ public interface Logger {
      * @param level the log message level.
      * @param msg the string message (or a key in the message catalog, if
      * this logger is a {@link
-     * LoggerFinder#getLocalizedLogger(java.lang.String,
-     * java.util.ResourceBundle, java.lang.Module) localized logger});
+     * LoggerFinder#getLocalizedLogger(String,
+     * ResourceBundle, Module) localized logger});
      * can be {@code null}.
      *
      * @throws NullPointerException if {@code level} is {@code null}.
@@ -225,8 +225,8 @@ public interface Logger {
      * @param level the log message level.
      * @param msg the string message (or a key in the message catalog, if
      * this logger is a {@link
-     * LoggerFinder#getLocalizedLogger(java.lang.String,
-     * java.util.ResourceBundle, java.lang.Module) localized logger});
+     * LoggerFinder#getLocalizedLogger(String,
+     * ResourceBundle, Module) localized logger});
      * can be {@code null}.
      * @param thrown a {@code Throwable} associated with the log message;
      *        can be {@code null}.
@@ -274,8 +274,8 @@ public interface Logger {
      * @param format the string message format in {@link
      * java.text.MessageFormat} format, (or a key in the message
      * catalog, if this logger is a {@link
-     * LoggerFinder#getLocalizedLogger(java.lang.String,
-     * java.util.ResourceBundle, java.lang.Module) localized logger});
+     * LoggerFinder#getLocalizedLogger(String,
+     * ResourceBundle, Module) localized logger});
      * can be {@code null}.
      * @param params an optional list of parameters to the message (may be
      * none).

@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.*;
 
 /**
- * Copy of {@link java.lang.Deprecated}
+ * Copy of {@link Deprecated}
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

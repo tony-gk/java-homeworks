@@ -15,7 +15,7 @@ public abstract class LdapReferralException extends ReferralException {
      * explanation supplied. All other fields are set to null.
      *
      * @param   explanation     Additional detail about this exception. Can be null.
-     * @see java.lang.Throwable#getMessage
+     * @see Throwable#getMessage
      */
     protected LdapReferralException(String explanation) {
         super(explanation);

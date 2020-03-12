@@ -9,7 +9,7 @@ import java.util.*;
 /**
  * Copy of {@link ImmutableDescriptor}
  */
-public class ImmutableDescriptor implements javax.management.Descriptor {
+public class ImmutableDescriptor implements Descriptor {
     private static final long serialVersionUID = 8853308591080540165L;
 
     /**
@@ -198,7 +198,7 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
      * the same elements.  Object array values are considered the same if
      * {@link Arrays#deepEquals(Object[],Object[])} returns true.
      */
-    public static ImmutableDescriptor union(javax.management.Descriptor... descriptors) {
+    public static ImmutableDescriptor union(Descriptor... descriptors) {
         // Optimize the case where exactly one Descriptor is non-Empty
         // and it is immutable - we can just return it.
         int index = findNonEmpty(descriptors, 0);
@@ -211,7 +211,7 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
         Map<String, Object> map =
                 new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
         ImmutableDescriptor biggestImmutable = EMPTY_DESCRIPTOR;
-        for (javax.management.Descriptor d : descriptors) {
+        for (Descriptor d : descriptors) {
             if (d != null) {
                 String[] names;
                 if (d instanceof ImmutableDescriptor) {
@@ -247,7 +247,7 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
         return new ImmutableDescriptor(map);
     }
 
-    private static boolean isEmpty(javax.management.Descriptor d) {
+    private static boolean isEmpty(Descriptor d) {
         if (d == null)
             return true;
         else if (d instanceof ImmutableDescriptor)
@@ -256,7 +256,7 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
             return (d.getFieldNames().length == 0);
     }
 
-    private static int findNonEmpty(javax.management.Descriptor[] ds, int start) {
+    private static int findNonEmpty(Descriptor[] ds, int start) {
         for (int i = start; i < ds.length; i++) {
             if (!isEmpty(ds[i]))
                 return i;
@@ -342,13 +342,13 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof javax.management.Descriptor))
+        if (!(o instanceof Descriptor))
             return false;
         String[] onames;
         if (o instanceof ImmutableDescriptor) {
             onames = ((ImmutableDescriptor) o).names;
         } else {
-            onames = ((javax.management.Descriptor) o).getFieldNames();
+            onames = ((Descriptor) o).getFieldNames();
             Arrays.sort(onames, String.CASE_INSENSITIVE_ORDER);
         }
         if (names.length != onames.length)
@@ -361,7 +361,7 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
         if (o instanceof ImmutableDescriptor)
             ovalues = ((ImmutableDescriptor) o).values;
         else
-            ovalues = ((javax.management.Descriptor) o).getFieldValues(onames);
+            ovalues = ((Descriptor) o).getFieldValues(onames);
         return Arrays.deepEquals(values, ovalues);
     }
 
@@ -443,7 +443,7 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
      * be thrown.
      */
     @Override
-    public javax.management.Descriptor clone() {
+    public Descriptor clone() {
         return this;
     }
 
@@ -506,7 +506,7 @@ public class ImmutableDescriptor implements javax.management.Descriptor {
             unsupported();
     }
 
-    static javax.management.Descriptor nonNullDescriptor(Descriptor d) {
+    static Descriptor nonNullDescriptor(Descriptor d) {
         if (d == null)
             return EMPTY_DESCRIPTOR;
         else
