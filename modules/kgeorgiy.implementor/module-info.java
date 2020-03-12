@@ -15,6 +15,4 @@ module kgeorgiy.implementor {
     opens info.kgeorgiy.java.advanced.implementor.full.interfaces.standard;
     opens info.kgeorgiy.java.advanced.implementor.full.classes;
     opens info.kgeorgiy.java.advanced.implementor.full.classes.standard;
-    opens info.kgeorgiy.java.advanced.implementor.full.lang;
-    exports info.kgeorgiy.java.advanced.implementor.full.lang;
 }
