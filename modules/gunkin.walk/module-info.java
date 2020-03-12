@@ -1,0 +1,2 @@
+module gunkin.walk {
+}
