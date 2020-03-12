@@ -14,10 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
@@ -177,7 +174,7 @@ public class Implementor implements JarImpler {
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
         try (JarOutputStream writer = new JarOutputStream(Files.newOutputStream(jarFile), manifest)) {
-            writer.putNextEntry(new ZipEntry(token.getName().replace('.', '/') + "Impl.class"));
+            writer.putNextEntry(new ZipEntry((token.getPackageName() + "." + token.getSimpleName()).replace('.', '/') + "Impl.class"));
             Files.copy(resolveFilePath(token, tempDir, "class"), writer);
         } catch (IOException e) {
             throw new ImplerException("Failed to write to JAR file", e);
@@ -286,21 +283,27 @@ public class Implementor implements JarImpler {
     }
 
     /**
-     * Returns list of abstract methods of specified {@code token}.
+     * Returns list of abstract methods to be implemented of specified {@code token}.
      *
      * @param token class whose methods to be returned
      * @return the new list
      */
     private List<Method> getAbstractMethods(Class<?> token) {
+        List<MethodWrapper> finalDeclaredMethods = Arrays.stream(token.getDeclaredMethods())
+                .filter(m -> Modifier.isFinal(m.getModifiers()))
+                .map(MethodWrapper::new).collect(Collectors.toList());
+
         List<Method> methods = new ArrayList<>(Arrays.asList(token.getMethods()));
         while (token != null) {
             methods.addAll(Arrays.asList(token.getDeclaredMethods()));
             token = token.getSuperclass();
         }
+
         return methods.stream()
                 .filter(m -> Modifier.isAbstract(m.getModifiers()))
                 .map(MethodWrapper::new)
                 .distinct()
+                .filter(m -> !finalDeclaredMethods.contains(m))
                 .map(MethodWrapper::get)
                 .collect(Collectors.toList());
     }
