@@ -289,9 +289,9 @@ public class Implementor implements JarImpler {
      * @return the new list
      */
     private List<Method> getAbstractMethods(Class<?> token) {
-        List<MethodWrapper> finalDeclaredMethods = Arrays.stream(token.getDeclaredMethods())
+        List<MethodSignature> finalDeclaredMethods = Arrays.stream(token.getDeclaredMethods())
                 .filter(m -> Modifier.isFinal(m.getModifiers()))
-                .map(MethodWrapper::new).collect(Collectors.toList());
+                .map(MethodSignature::new).collect(Collectors.toList());
 
         List<Method> methods = new ArrayList<>(Arrays.asList(token.getMethods()));
         while (token != null) {
@@ -301,10 +301,10 @@ public class Implementor implements JarImpler {
 
         return methods.stream()
                 .filter(m -> Modifier.isAbstract(m.getModifiers()))
-                .map(MethodWrapper::new)
+                .map(MethodSignature::new)
                 .distinct()
                 .filter(m -> !finalDeclaredMethods.contains(m))
-                .map(MethodWrapper::get)
+                .map(MethodSignature::get)
                 .collect(Collectors.toList());
     }
 
@@ -365,11 +365,11 @@ public class Implementor implements JarImpler {
      *
      * <p> In the case when the @{code executable} is instance of {@link Constructor} the format is:
      * {@code super([args])} where <i>args</i> is the result of
-     * {@link #buildParameters(Executable, boolean) buildParameters(executable, true)}
+     * {@link #buildParameters(Executable, boolean) buildParameters(executable, true)}.
      *
      * <p> Otherwise method returns:
      * {@code  return [default value]} where <i>default value</i> is the value returned by
-     * {@link #buildDefaultValue(Class) buildDefaultValue(executable)}
+     * {@link #buildDefaultValue(Class) buildDefaultValue(executable)}.
      *
      * @param executable {@link Constructor} or {@link Method} object.
      * @return string representation of the body of the executable object
@@ -384,7 +384,7 @@ public class Implementor implements JarImpler {
 
     /**
      * Returns default value of specified {@code token}. In the
-     * case when token is void.class method returns an empty string
+     * case when token is void.class method returns an empty string.
      *
      * @param token whose default value is to be returned
      * @return string representation of the default value
@@ -418,7 +418,7 @@ public class Implementor implements JarImpler {
     /**
      * Returns a string describing this {@code parameter}. The format is the
      * type (if {@code withType} is true} in canonical name, followed by a space,
-     * followed by the name of the parameter
+     * followed by the name of the parameter.
      *
      * @param parameter whose representation is to be returned
      * @param withType  determines whether the type of parameters is necessary
@@ -435,7 +435,7 @@ public class Implementor implements JarImpler {
      * virtual machine, as defined by the Java Language Specification.
      *
      * @param directory to be deleted
-     * @throws ImplerException if an error is thrown when accessing the starting file.
+     * @throws ImplerException if an error is thrown when accessing the starting file
      * @see File#deleteOnExit()
      */
     private void deleteDirectoryOnExit(Path directory) throws ImplerException {
@@ -447,7 +447,7 @@ public class Implementor implements JarImpler {
     }
 
     /**
-     * Converts non-ASCII characters in the given string to unicode escaping
+     * Converts non-ASCII characters in the given string to unicode escaping.
      *
      * @param s to convert
      * @return converted string
@@ -467,7 +467,7 @@ public class Implementor implements JarImpler {
     /**
      * Wrapper of {@link Method}. It's used to prevent identical implementations of abstract methods.
      */
-    private static class MethodWrapper {
+    private static class MethodSignature {
         /**
          * Initial value used for calculating hash.
          */
@@ -487,7 +487,7 @@ public class Implementor implements JarImpler {
          *
          * @param method object to be wrapped
          */
-        MethodWrapper(Method method) {
+        MethodSignature(Method method) {
             this.method = method;
         }
 
@@ -501,15 +501,15 @@ public class Implementor implements JarImpler {
         }
 
         /**
-         * Compares this {@code MethodWrapper} against the specified object.  Returns
-         * true if the objects are the same.  Two {@code MethodWrappers} are the same if
+         * Compares this {@code MethodSignature} against the specified object.  Returns
+         * true if the objects are the same.  Two {@code MethodSignature} are the same if
          * they have the same name and parameter types and return type.
          */
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            MethodWrapper that = (MethodWrapper) o;
+            MethodSignature that = (MethodSignature) o;
             return Objects.equals(method.getReturnType(), that.method.getReturnType())
                     && Arrays.equals(method.getParameterTypes(), that.method.getParameterTypes())
                     && Objects.equals(method.getName(), that.method.getName());
