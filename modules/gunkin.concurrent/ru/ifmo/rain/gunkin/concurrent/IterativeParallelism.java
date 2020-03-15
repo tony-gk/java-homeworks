@@ -1,16 +1,16 @@
 package ru.ifmo.rain.gunkin.concurrent;
 
+import info.kgeorgiy.java.advanced.concurrent.ListIP;
 import info.kgeorgiy.java.advanced.concurrent.ScalarIP;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class IterativeParallelism implements ScalarIP {
+public class IterativeParallelism implements ListIP {
     /**
      * Returns maximum value.
      *
@@ -130,13 +130,13 @@ public class IterativeParallelism implements ScalarIP {
     @Override
     public <T> boolean any(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
         List<List<? extends T>> parts = divideList(values, threads);
-        List<Boolean> results = new ArrayList<>(parts.size());
+        List<Boolean> results = new ArrayList<>(Collections.nCopies(parts.size(), false));
         List<Thread> workers = new ArrayList<>(parts.size());
         for (int i = 0; i < parts.size(); i++) {
             int finalI = i;
             workers.add(new Thread(() -> {
                 List<? extends T> part = parts.get(finalI);
-                results.add(part.stream().anyMatch(predicate));
+                results.set(finalI, part.stream().anyMatch(predicate));
             }));
 
             workers.get(i).start();
@@ -145,5 +145,91 @@ public class IterativeParallelism implements ScalarIP {
             workers.get(i).join();
         }
         return results.stream().anyMatch(b -> b);
+    }
+
+    /**
+     * Join values to string.
+     *
+     * @param threads number of advanced.concurrent threads.
+     * @param values  values to join.
+     * @return list of joined result of {@link #toString()} call on each value.
+     * @throws InterruptedException if executing thread was interrupted.
+     */
+    @Override
+    public String join(int threads, List<?> values) throws InterruptedException {
+        List<List<?>> parts = divideList(values, threads);
+        List<String> results = new ArrayList<>(Collections.nCopies(parts.size(), ""));
+        List<Thread> workers = new ArrayList<>(parts.size());
+        for (int i = 0; i < parts.size(); i++) {
+            int finalI = i;
+            workers.add(new Thread(() -> {
+                List<?> part = parts.get(finalI);
+                results.set(finalI, part.stream().map(Object::toString).collect(Collectors.joining()));
+            }));
+
+            workers.get(i).start();
+        }
+        for (int i =0;i< parts.size(); i++) {
+            workers.get(i).join();
+        }
+        return String.join("", results);
+    }
+
+    /**
+     * Filters values by predicate.
+     *
+     * @param threads   number of advanced.concurrent threads.
+     * @param values    values to filter.
+     * @param predicate filter predicate.
+     * @return list of values satisfying given predicated. Order of values is preserved.
+     * @throws InterruptedException if executing thread was interrupted.
+     */
+    @Override
+    public <T> List<T> filter(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
+        List<List<? extends T>> parts = divideList(values, threads);
+        List<Stream<? extends T>> results = new ArrayList<>(Collections.nCopies(parts.size(), Stream.empty()));
+        List<Thread> workers = new ArrayList<>(parts.size());
+        for (int i = 0; i < parts.size(); i++) {
+            int finalI = i;
+            workers.add(new Thread(() -> {
+                List<? extends T> part = parts.get(finalI);
+                results.set(finalI, part.stream().filter(predicate));
+            }));
+
+            workers.get(i).start();
+        }
+        for (int i =0;i< parts.size(); i++) {
+            workers.get(i).join();
+        }
+        return results.stream().flatMap(s -> s).collect(Collectors.toList());
+    }
+
+    /**
+     * Maps values.
+     *
+     * @param threads number of advanced.concurrent threads.
+     * @param values  values to filter.
+     * @param f       mapper function.
+     * @return list of values mapped by given function.
+     * @throws InterruptedException if executing thread was interrupted.
+     */
+    @Override
+    public <T, U> List<U> map(int threads, List<? extends T> values, Function<? super T, ? extends U> f) throws InterruptedException {
+        List<List<? extends T>> parts = divideList(values, threads);
+        List<Stream<? extends U>> results = new ArrayList<>(Collections.nCopies(parts.size(), Stream.empty()));
+        List<Thread> workers = new ArrayList<>(parts.size());
+        for (int i = 0; i < parts.size(); i++) {
+            int finalI = i;
+            workers.add(new Thread(() -> {
+                List<? extends T> part = parts.get(finalI);
+                results.set(finalI, part.stream().map(f));
+            }));
+
+            workers.get(i).start();
+        }
+        for (int i =0;i< parts.size(); i++) {
+            workers.get(i).join();
+        }
+        return results.stream().flatMap(s -> s).collect(Collectors.toList());
     }
 }
