@@ -123,6 +123,9 @@ public class IterativeParallelism implements ListIP {
     private static <T, U> U func(int threads, List<? extends T> values,
                           Function<Stream<? extends T>, U> mapper,
                           Function<Stream<U>, U> resultMapper) throws InterruptedException {
+        if (threads < 1) {
+            throw new IllegalArgumentException("Number of threads can't be less than one");
+        }
         List<List<? extends T>> parts = divideList(values, threads);
         List<U> results = new ArrayList<>(Collections.nCopies(parts.size(), null));
         List<Thread> workers = new ArrayList<>(parts.size());
