@@ -1,8 +1,0 @@
-#!/bin/bash
-
-cd ..
-find ../modules/info -name "*.java" > scripts/sources.txt
-find ../modules -wholename "*student/*.java" >> scripts/sources.txt
-javac -d . @scripts/sources.txt &&
-java -cp . -p . -m info.kgeorgiy.java.advanced.student AdvancedStudentGroupQuery ru.ifmo.rain.gunkin.student.StudentDB "85"
-rm scripts/sources.txt

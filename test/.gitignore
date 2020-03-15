@@ -1,3 +1,6 @@
 #ignore compiled files
 ru/*
 info/*
+
+#scripts
+scripts

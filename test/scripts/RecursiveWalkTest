@@ -1,5 +1,0 @@
-#!/bin/bash
-
-cd ..
-javac -d . ../modules/ru/ifmo/rain/gunkin/walk/* &&
-java -cp . -p . -m info.kgeorgiy.java.advanced.walk RecursiveWalk ru.ifmo.rain.gunkin.walk.RecursiveWalk "$1"
