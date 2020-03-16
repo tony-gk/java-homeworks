@@ -1,7 +1,6 @@
 package ru.ifmo.rain.gunkin.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.ListIP;
-import info.kgeorgiy.java.advanced.concurrent.ScalarIP;
 
 import java.util.*;
 import java.util.function.Function;
@@ -38,7 +37,7 @@ public class IterativeParallelism implements ListIP {
      */
     @Override
     public <T> T minimum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
-        return func(threads, values,
+        return calcFunction(threads, values,
                 stream -> stream.min(comparator).get(),
                 resultStream -> resultStream.min(comparator).get());
     }
@@ -53,7 +52,7 @@ public class IterativeParallelism implements ListIP {
      * @throws InterruptedException if executing thread was interrupted.
      */
     @Override
-   public <T> boolean all(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
+    public <T> boolean all(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
         return !any(threads, values, predicate.negate());
     }
 
@@ -68,7 +67,7 @@ public class IterativeParallelism implements ListIP {
      */
     @Override
     public <T> boolean any(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
-        return func(threads, values,
+        return calcFunction(threads, values,
                 stream -> stream.anyMatch(predicate),
                 resultStream -> resultStream.anyMatch(Boolean::booleanValue));
     }
@@ -83,7 +82,7 @@ public class IterativeParallelism implements ListIP {
      */
     @Override
     public String join(int threads, List<?> values) throws InterruptedException {
-        return func(threads, values,
+        return calcFunction(threads, values,
                 stream -> stream.map(Object::toString).collect(Collectors.joining()),
                 resultStream -> resultStream.collect(Collectors.joining()));
     }
@@ -99,9 +98,9 @@ public class IterativeParallelism implements ListIP {
      */
     @Override
     public <T> List<T> filter(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
-        return func(threads, values,
+        return calcFunction(threads, values,
                 stream -> stream.filter(predicate).collect(Collectors.toList()),
-                resutlStream -> resutlStream.flatMap(Collection::stream).collect(Collectors.toList()));
+                resultStream -> resultStream.flatMap(Collection::stream).collect(Collectors.toList()));
     }
 
     /**
@@ -115,14 +114,14 @@ public class IterativeParallelism implements ListIP {
      */
     @Override
     public <T, U> List<U> map(int threads, List<? extends T> values, Function<? super T, ? extends U> f) throws InterruptedException {
-        return func(threads, values,
+        return calcFunction(threads, values,
                 stream -> stream.map(f).collect(Collectors.toList()),
                 resultStream -> resultStream.flatMap(Collection::stream).collect(Collectors.toList()));
     }
 
-    private static <T, U> U func(int threads, List<? extends T> values,
-                          Function<Stream<? extends T>, U> mapper,
-                          Function<Stream<U>, U> resultMapper) throws InterruptedException {
+    private static <T, U> U calcFunction(int threads, List<? extends T> values,
+                                         Function<Stream<? extends T>, U> mapper,
+                                         Function<Stream<U>, U> resultMapper) throws InterruptedException {
         if (threads < 1) {
             throw new IllegalArgumentException("Number of threads can't be less than one");
         }
