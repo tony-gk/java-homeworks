@@ -81,7 +81,10 @@ public class StudentDB implements AdvancedStudentGroupQuery {
      */
     @Override
     public String getMinStudentFirstName(List<Student> students) {
-        return sortedStudentsBy(students, Student::compareTo).findFirst().map(Student::getFirstName).orElse("");
+        return students.stream()
+                .min(Student::compareTo)
+                .map(Student::getFirstName)
+                .orElse("");
     }
 
     private List<Student> sortedStudentListBy(Collection<Student> students, Comparator<Student> comparator) {
@@ -190,9 +193,9 @@ public class StudentDB implements AdvancedStudentGroupQuery {
                                              ToLongFunction<List<Student>> listMapper,
                                              Comparator<String> keyComparator) {
         return groupingStudentsBy(students, groupClassifier)
+                .map(e -> Map.entry(e.getKey(), listMapper.applyAsLong(e.getValue())))
                 .max(Comparator
-                        .comparingLong((Map.Entry<String, List<Student>> e)
-                                -> listMapper.applyAsLong(e.getValue()))
+                        .comparingLong(Map.Entry<String, Long>::getValue)
                         .thenComparing(Map.Entry::getKey, keyComparator))
                 .map(Map.Entry::getKey).orElse("");
     }
@@ -234,7 +237,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
     }
 
     private List<Student> getListByIndices(Collection<Student> students, final int[] indices) {
-        return  getListByIndices(new ArrayList<>(students), indices);
+        return getListByIndices(new ArrayList<>(students), indices);
     }
 
     /**
