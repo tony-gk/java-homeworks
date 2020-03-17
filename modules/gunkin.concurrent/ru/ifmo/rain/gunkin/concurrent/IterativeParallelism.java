@@ -138,9 +138,7 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public <T> T reduce(int threads, List<T> values, Monoid<T> monoid) throws InterruptedException {
-        return parallelCalculating(threads, values,
-                stream -> stream.reduce(monoid.getIdentity(), monoid.getOperator()),
-                resultStream -> resultStream.reduce(monoid.getIdentity(), monoid.getOperator()));
+        return mapReduce(threads, values, Function.identity(), monoid);
     }
 
     /**
