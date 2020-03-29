@@ -198,26 +198,12 @@ public class IterativeParallelism implements AdvancedIP {
 
     private static void joinThreads(List<Thread> threads) throws InterruptedException {
         InterruptedException ie = null;
-        for (int i = 0; i < threads.size(); i++) {
-            try {
-                threads.get(i).join();
-            } catch (InterruptedException e) {
-                if (ie == null) {
-                    ie = new InterruptedException("Executing thread was interrupted during joining thread");
-                    for (int j = i; j < threads.size(); j++) {
-                        threads.get(j).interrupt();
-                    }
-                }
-                ie.addSuppressed(e);
-                i--;
-            }
-        }
         for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
                 if (ie == null) {
-                    ie = new InterruptedException("");
+                    ie = new InterruptedException("Executing thread was interrupted during joining thread");
                 }
                 ie.addSuppressed(e);
             }
