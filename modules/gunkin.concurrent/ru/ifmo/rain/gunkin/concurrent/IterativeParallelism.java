@@ -10,15 +10,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class MapperParallelism implements AdvancedIP {
+public class IterativeParallelism implements AdvancedIP {
 
     private final ParallelMapper mapper;
 
-    public MapperParallelism() {
+    public IterativeParallelism() {
         this.mapper = null;
     }
 
-    public MapperParallelism(ParallelMapper mapper) {
+    public IterativeParallelism(ParallelMapper mapper) {
         this.mapper = mapper;
     }
 
@@ -172,8 +172,8 @@ public class MapperParallelism implements AdvancedIP {
     }
 
     private <T, R> R parallelStreamMap(int threads, List<T> values,
-                                       Function<Stream<T>, R> map,
-                                       Function<Stream<R>, R> resultMap) throws InterruptedException {
+                                       Function<Stream<T>, R> streamMapper,
+                                       Function<Stream<R>, R> resultStreamMapper) throws InterruptedException {
         if (threads < 1) {
             throw new IllegalArgumentException("Number of threads can't be less than one");
         }
@@ -185,25 +185,39 @@ public class MapperParallelism implements AdvancedIP {
             List<Thread> workers = new ArrayList<>(parts.size());
             for (int i = 0; i < parts.size(); i++) {
                 final int finalIndex = i;
-                workers.add(new Thread(() -> results.set(finalIndex, map.apply(parts.get(finalIndex)))));
+                workers.add(new Thread(() -> results.set(finalIndex, streamMapper.apply(parts.get(finalIndex)))));
                 workers.get(i).start();
             }
             joinThreads(workers);
         } else {
-            results =  mapper.map(map, parts);
+            results =  mapper.map(streamMapper, parts);
         }
 
-        return resultMap.apply(results.stream());
+        return resultStreamMapper.apply(results.stream());
     }
 
     private static void joinThreads(List<Thread> threads) throws InterruptedException {
         InterruptedException ie = null;
+        for (int i = 0; i < threads.size(); i++) {
+            try {
+                threads.get(i).join();
+            } catch (InterruptedException e) {
+                if (ie == null) {
+                    ie = new InterruptedException("Executing thread was interrupted during joining thread");
+                    for (int j = i; j < threads.size(); j++) {
+                        threads.get(j).interrupt();
+                    }
+                }
+                ie.addSuppressed(e);
+                i--;
+            }
+        }
         for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
                 if (ie == null) {
-                    ie = new InterruptedException("Executing thread was interrupted during joining thread");
+                    ie = new InterruptedException("");
                 }
                 ie.addSuppressed(e);
             }
