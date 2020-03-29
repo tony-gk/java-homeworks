@@ -10,15 +10,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class IterativeParallelism implements AdvancedIP {
+public class MapperParallelism implements AdvancedIP {
 
     private final ParallelMapper mapper;
 
-    public IterativeParallelism() {
+    public MapperParallelism() {
         this.mapper = null;
     }
 
-    public IterativeParallelism(ParallelMapper mapper) {
+    public MapperParallelism(ParallelMapper mapper) {
         this.mapper = mapper;
     }
 
@@ -51,7 +51,7 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public <T> T minimum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
-        return parallelCalculating(threads, values,
+        return parallelStreamMap(threads, values,
                 stream -> stream.min(comparator).get(),
                 resultStream -> resultStream.min(comparator).get());
     }
@@ -83,7 +83,7 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public <T> boolean any(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
-        return parallelCalculating(threads, values,
+        return parallelStreamMap(threads, values,
                 stream -> stream.anyMatch(predicate),
                 resultStream -> resultStream.anyMatch(Boolean::booleanValue));
     }
@@ -99,7 +99,7 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public String join(int threads, List<?> values) throws InterruptedException {
-        return parallelCalculating(threads, values,
+        return parallelStreamMap(threads, values,
                 stream -> stream.map(Object::toString).collect(Collectors.joining()),
                 resultStream -> resultStream.collect(Collectors.joining()));
     }
@@ -116,7 +116,7 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public <T> List<T> filter(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
-        return parallelCalculating(threads, values,
+        return parallelStreamMap(threads, values,
                 stream -> stream.filter(predicate).collect(Collectors.toList()),
                 resultStream -> resultStream.flatMap(Collection::stream).collect(Collectors.toList()));
     }
@@ -133,7 +133,7 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public <T, U> List<U> map(int threads, List<? extends T> values, Function<? super T, ? extends U> f) throws InterruptedException {
-        return parallelCalculating(threads, values,
+        return parallelStreamMap(threads, values,
                 stream -> stream.map(f).collect(Collectors.toList()),
                 resultStream -> resultStream.flatMap(Collection::stream).collect(Collectors.toList()));
     }
@@ -166,14 +166,14 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public <T, R> R mapReduce(int threads, List<T> values, Function<T, R> lift, Monoid<R> monoid) throws InterruptedException {
-        return parallelCalculating(threads, values,
+        return parallelStreamMap(threads, values,
                 stream -> stream.map(lift).reduce(monoid.getIdentity(), monoid.getOperator()),
                 resultStream -> resultStream.reduce(monoid.getOperator()).get());
     }
 
-    private <T, R> R parallelCalculating(int threads, List<T> values,
-                                                Function<Stream<T>, R> map,
-                                                Function<Stream<R>, R> resultMap) throws InterruptedException {
+    private <T, R> R parallelStreamMap(int threads, List<T> values,
+                                       Function<Stream<T>, R> map,
+                                       Function<Stream<R>, R> resultMap) throws InterruptedException {
         if (threads < 1) {
             throw new IllegalArgumentException("Number of threads can't be less than one");
         }
