@@ -9,15 +9,16 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.*;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of the {@code Impler} interface.
+ */
 public class Implementor implements Impler {
     /**
      * System-dependent line separator string.

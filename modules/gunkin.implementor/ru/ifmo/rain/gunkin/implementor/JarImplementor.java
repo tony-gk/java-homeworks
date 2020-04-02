@@ -16,6 +16,9 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
+/**
+ * Implementation of the {@code JarImpler} interface.
+ */
 public class JarImplementor extends Implementor implements JarImpler {
 
     /**
