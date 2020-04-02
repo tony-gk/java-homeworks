@@ -1,10 +1,8 @@
 package ru.ifmo.rain.gunkin.implementor;
 
+import info.kgeorgiy.java.advanced.implementor.Impler;
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
-import info.kgeorgiy.java.advanced.implementor.JarImpler;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -14,55 +12,17 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.jar.Attributes;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
 
-public class Implementor implements JarImpler {
+public class Implementor implements Impler {
     /**
      * System-dependent line separator string.
      */
     private static final String EOL = System.lineSeparator();
-
-    /**
-     * Entry point into the application.
-     *
-     * @param args Usage:
-     *             <ul>
-     *             <li> {@code <classToken> <rootPath>} to produce file implementing {@code classToken} in {@code rootPath}</li>
-     *             <li>{@code -jar <classToken> <jarPath>} to produce jar file in {@code jarPath} implementing {@code classToken}</li>
-     *             </ul>
-     */
-    static public void main(String[] args) {
-        if (args == null || args.length < 2 || args.length > 3) {
-            System.err.println("Excepted two or three arguments");
-            return;
-        }
-
-        if (Arrays.stream(args).anyMatch(Objects::isNull)) {
-            System.err.println("One of arguments is null");
-        }
-
-        Implementor implementor = new Implementor();
-
-        try {
-            if (args.length == 2) {
-                implementor.implement(Class.forName(args[0]), Paths.get(args[1]));
-            } else {
-                implementor.implementJar(Class.forName(args[1]), Paths.get(args[2]));
-            }
-        } catch (ClassNotFoundException e) {
-            System.err.println("Invalid class name: " + e.getMessage());
-        } catch (ImplerException e) {
-            System.err.println(e.getMessage());
-        } catch (InvalidPathException e) {
-            System.err.println("Invalid root path: " + e.getMessage());
-        }
-
-    }
 
     /**
      * Produces code implementing class or interface specified by provided {@code token}.
@@ -85,9 +45,7 @@ public class Implementor implements JarImpler {
      */
     @Override
     public void implement(Class<?> token, Path root) throws ImplerException {
-        if (token == null || root == null) {
-            throw new ImplerException("Arguments must be not-null");
-        }
+        requireNotNull(token, root);
 
         if (token.isPrimitive() || token.isArray() || Modifier.isFinal(token.getModifiers()) || Modifier.isPrivate(token.getModifiers()) || token == Enum.class) {
             throw new ImplerException("Invalid class token");
@@ -108,99 +66,9 @@ public class Implementor implements JarImpler {
         }
     }
 
-    /**
-     * Returns path to file containing implementation of {@code token} with specified {@code extension}
-     *
-     * @param token     type token to return path for
-     * @param root      root directory
-     * @param extension file extension
-     * @return path to file
-     */
-    private Path resolveFilePath(Class<?> token, Path root, String extension) {
-        return root.resolve(token.getPackageName().replace(".", File.separator))
-                .resolve(token.getSimpleName() + "Impl." + extension);
-    }
 
     /**
-     * Produces {@code .jar} file implementing class or interface specified by provided {@code token}.
-     * <p>
-     * Generated class classes name should be same as classes name of the type token with {@code Impl} suffix
-     * added.
-     *
-     * @param token   type token to create implementation for.
-     * @param jarFile target {@code .jar} file.
-     * @throws ImplerException when implementation cannot be generated for one of such reasons:
-     *                         <ul>
-     *                         <li> one of arguments is null</li>
-     *                         <li> {@code token} is primitive or array</li>
-     *                         <li> {@code token} is final or private</li>
-     *                         <li> {@code token} is {@link Enum}</li>
-     *                         <li> Error occurred during writing, creating files, or compiling</li>
-     *                         </ul>
-     */
-    @Override
-    public void implementJar(Class<?> token, Path jarFile) throws ImplerException {
-        if (token == null || jarFile == null) {
-            throw new ImplerException("Arguments can not be null");
-        }
-
-        Path tempDir;
-        try {
-            tempDir = Files.createTempDirectory(jarFile.toAbsolutePath().getParent(), "tmp");
-        } catch (IOException e) {
-            throw new ImplerException("Failed to create temporary directory", e);
-        }
-
-        try {
-            implement(token, tempDir);
-            compileImplementedFile(token, tempDir);
-            createJarFile(token, tempDir, jarFile);
-        } finally {
-            deleteDirectoryOnExit(tempDir);
-        }
-    }
-
-    /**
-     * Produces {@code .jar} file implementing class or interface specified by provided {@code token}.
-     *
-     * @param token   type token to create implementation for
-     * @param tempDir directory where {@code token} implementation was compiled via
-     *                {@link #compileImplementedFile(Class, Path) compileImplementedFile(token, tempDir}
-     * @param jarFile target {@code .jar} file
-     * @throws ImplerException if an I/O error thrown during writing to jar file
-     */
-    private void createJarFile(Class<?> token, Path tempDir, Path jarFile) throws ImplerException {
-        Manifest manifest = new Manifest();
-        Attributes attributes = manifest.getMainAttributes();
-        attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        try (JarOutputStream writer = new JarOutputStream(Files.newOutputStream(jarFile), manifest)) {
-            writer.putNextEntry(new ZipEntry((token.getPackageName() + "." + token.getSimpleName()).replace('.', '/') + "Impl.class"));
-            Files.copy(resolveFilePath(token, tempDir, "class"), writer);
-        } catch (IOException e) {
-            throw new ImplerException("Failed to write to JAR file", e);
-        }
-    }
-
-    /**
-     * Compiles java file which was implemented via {@link #implement(Class, Path) implement(token, root)}.
-     *
-     * @param token class which was implemented
-     * @param root  path where class was implemented
-     * @throws ImplerException if an error occurred during compiling
-     */
-    private void compileImplementedFile(Class<?> token, Path root) throws ImplerException {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        String[] args = new String[]{
-                "-cp",
-                root.toString() + File.pathSeparator + System.getProperty("java.class.path"),
-                resolveFilePath(token, root, "java").toString()};
-        if (compiler == null || compiler.run(null, null, null, args) != 0) {
-            throw new ImplerException("Failed to compile implemented file");
-        }
-    }
-
-    /**
-     * Writes code implementation of the {@code token} class to specified {@code writer}.
+     * Writes code implementation of the {@code token} class to the specified {@code writer}.
      *
      * @param token  class the header of which is to be written
      * @param writer to write to
@@ -428,23 +296,6 @@ public class Implementor implements JarImpler {
         return (withType ? parameter.getType().getCanonicalName() + " " : "") + parameter.getName();
     }
 
-    /**
-     * Requests that the {@code directory} and all including files
-     * be deleted when the virtual machine terminates.
-     * Deletion will be attempted only for normal termination of the
-     * virtual machine, as defined by the Java Language Specification.
-     *
-     * @param directory to be deleted
-     * @throws ImplerException if an error is thrown when accessing the starting file
-     * @see File#deleteOnExit()
-     */
-    private void deleteDirectoryOnExit(Path directory) throws ImplerException {
-        try {
-            Files.walk(directory).map(Path::toFile).forEach(File::deleteOnExit);
-        } catch (IOException | SecurityException e) {
-            throw new ImplerException("Failed to delete temporary files", e);
-        }
-    }
 
     /**
      * Converts non-ASCII characters in the given string to unicode escaping.
@@ -452,7 +303,7 @@ public class Implementor implements JarImpler {
      * @param s to convert
      * @return converted string
      */
-    private static String toUnicode(String s) {
+    private String toUnicode(String s) {
         StringBuilder sb = new StringBuilder();
         for (char c : s.toCharArray()) {
             if (c >= 128) {
@@ -462,6 +313,33 @@ public class Implementor implements JarImpler {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Returns path to file containing implementation of {@code token} with specified {@code extension}
+     *
+     * @param token     type token to return path for
+     * @param root      root directory
+     * @param extension file extension
+     * @return path to file
+     */
+    protected Path resolveFilePath(Class<?> token, Path root, String extension) {
+        return root.resolve(token.getPackageName().replace(".", File.separator))
+                .resolve(token.getSimpleName() + "Impl." + extension);
+    }
+
+
+    /**
+     * Checks that specified {@code token} and {@code path} are not {@code null}.
+     *
+     * @param token reference to check for nullity
+     * @param path reference to check for nullity
+     * @throws ImplerException if the {@code token} or {@code path} is null
+     */
+    protected void requireNotNull(Class<?> token, Path path) throws ImplerException {
+        if (token == null || path == null) {
+            throw new ImplerException("Arguments can not be null");
+        }
     }
 
     /**
@@ -528,4 +406,5 @@ public class Implementor implements JarImpler {
             return hash;
         }
     }
+
 }
