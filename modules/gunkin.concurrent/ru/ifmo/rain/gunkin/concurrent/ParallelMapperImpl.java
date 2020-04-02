@@ -42,15 +42,15 @@ public class ParallelMapperImpl implements ParallelMapper {
      */
     @Override
     public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
-        FutureList<R> futureList = new FutureList<>(args.size());
+        ResultList<R> resultList = new ResultList<>(args.size());
         for (int i = 0; i < args.size(); i++) {
             final int finalIndex = i;
             synchronized (tasks) {
-                tasks.add(() -> futureList.set(finalIndex, f.apply(args.get(finalIndex))));
+                tasks.add(() -> resultList.set(finalIndex, f.apply(args.get(finalIndex))));
                 tasks.notify();
             }
         }
-        return futureList.getList();
+        return resultList.getList();
     }
 
     /** Stops all threads. All unfinished mappings leave in undefined state. */
@@ -84,25 +84,25 @@ public class ParallelMapperImpl implements ParallelMapper {
         task.run();
     }
 
-    private static class FutureList<R> {
+    private static class ResultList<R> {
         private final List<R> results;
-        private int leftTasks;
+        private int done;
 
-        private FutureList(int size) {
+        private ResultList(int size) {
             this.results = new ArrayList<>(Collections.nCopies(size, null));
-            leftTasks = size;
+            this.done = 0;
         }
 
         public synchronized void set(int index, R value) {
             results.set(index, value);
-            leftTasks--;
-            if (leftTasks == 0) {
+            done++;
+            if (done == results.size()) {
                 notify();
             }
         }
 
         public synchronized List<R> getList() throws InterruptedException {
-            while (leftTasks != 0) {
+            while (done != results.size()) {
                 wait();
             }
             return results;
