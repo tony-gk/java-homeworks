@@ -7,6 +7,7 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
@@ -126,9 +127,17 @@ public class JarImplementor extends Implementor implements JarImpler {
      */
     private void compileImplementedFile(Class<?> token, Path root) throws ImplerException {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
+        String path;
+        try {
+            path = Path.of(token.getProtectionDomain().getCodeSource().getLocation().toURI()).toString();
+        } catch (URISyntaxException e) {
+            throw new ImplerException("Failed to convert URL to URI");
+        }
+
         String[] args = new String[]{
                 "-cp",
-                root.toString() + File.pathSeparator + System.getProperty("java.class.path"),
+                path,
                 resolveFilePath(token, root, "java").toString()};
         if (compiler == null || compiler.run(null, null, null, args) != 0) {
             throw new ImplerException("Failed to compile implemented file");

@@ -49,7 +49,7 @@ public class Implementor implements Impler {
         requireNotNull(token, root);
 
         if (token.isPrimitive() || token.isArray() || Modifier.isFinal(token.getModifiers()) || Modifier.isPrivate(token.getModifiers()) || token == Enum.class) {
-            throw new ImplerException("Invalid class token");
+            throw new ImplerException("Invalid class token [clazz = " + token + "]");
         }
 
         Path filePath = resolveFilePath(token, root, "java");
@@ -99,7 +99,7 @@ public class Implementor implements Impler {
      */
     private void writePackage(Class<?> token, Writer writer) throws IOException {
         String packageName = token.getPackageName();
-        if (!packageName.equals("")) {
+        if (!packageName.isEmpty()) {
             writer.write(toUnicode(String.format("package %s;%n%n", packageName)));
         }
     }
@@ -133,7 +133,7 @@ public class Implementor implements Impler {
         if (constructors.isEmpty()) {
             throw new ImplerException("No public or protected constructors in class");
         }
-        for (Constructor<?> constructor : token.getDeclaredConstructors()) {
+        for (Constructor<?> constructor : constructors) {
             writer.write(toUnicode(buildExecutable(constructor)));
         }
     }
@@ -325,8 +325,9 @@ public class Implementor implements Impler {
      * @return path to file
      */
     protected Path resolveFilePath(Class<?> token, Path root, String extension) {
-        return root.resolve(token.getPackageName().replace(".", File.separator))
-                .resolve(token.getSimpleName() + "Impl." + extension);
+        return root.resolve(Path.of(
+                token.getPackageName().replace('.', File.separatorChar),
+                token.getSimpleName() + "Impl." + extension));
     }
 
 
