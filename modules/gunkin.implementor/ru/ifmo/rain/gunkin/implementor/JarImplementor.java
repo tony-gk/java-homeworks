@@ -111,8 +111,9 @@ public class JarImplementor extends Implementor implements JarImpler {
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
         try (JarOutputStream writer = new JarOutputStream(Files.newOutputStream(jarFile), manifest)) {
-            writer.putNextEntry(new ZipEntry((token.getPackageName() + "." + token.getSimpleName()).replace('.', '/') + "Impl.class"));
-            Files.copy(resolveFilePath(token, tempDir, "class"), writer);
+            String localName = (token.getPackageName() + "." + token.getSimpleName()).replace('.', '/') + "Impl.class";
+            writer.putNextEntry(new ZipEntry(localName));
+            Files.copy(tempDir.resolve(localName), writer);
         } catch (IOException e) {
             throw new ImplerException("Failed to write to JAR file", e);
         }
