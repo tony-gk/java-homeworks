@@ -1,6 +1,5 @@
 #ignore compiled files
-ru/*
-info/*
+ru
 
 #scripts
 scripts
