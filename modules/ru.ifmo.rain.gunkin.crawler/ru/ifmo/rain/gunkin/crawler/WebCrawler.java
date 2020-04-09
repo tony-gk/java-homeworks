@@ -76,13 +76,11 @@ public class WebCrawler implements Crawler {
             phaser.arriveAndAwaitAdvance();
         }
 
-//        System.out.println(successful.size() + " " + failed.size() + " " + was.size());
         return new Result(List.copyOf(successful), failed);
     }
 
     private void addDownloading(String url, Phaser phaser, Set<String> successful,
                                 Map<String, IOException> failed, Queue<String> nextLevel) {
-
         String host;
         try {
             host = URLUtils.getHost(url);
@@ -94,7 +92,6 @@ public class WebCrawler implements Crawler {
 
         phaser.register();
         hostDownloader.add(() -> {
-//        downloadersPool.submit(() -> {
             try {
                 Document document = downloader.download(url);
                 phaser.register();
