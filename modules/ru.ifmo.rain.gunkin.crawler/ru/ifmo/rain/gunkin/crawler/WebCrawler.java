@@ -3,14 +3,25 @@ package ru.ifmo.rain.gunkin.crawler;
 import info.kgeorgiy.java.advanced.crawler.*;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.*;
 import java.util.concurrent.*;
 
 
 public class WebCrawler implements Crawler {
     private final Downloader downloader;
-    private final ExecutorService downloaderPool;
-    private final ExecutorService extractorPool;
+    private final ExecutorService downloadersPool;
+    private final ExecutorService extractorsPool;
+    private final Map<String, HostDownloader> hostDownloaders;
+    private final int perHost;
+
+    public WebCrawler(Downloader downloader, int downloaders, int extractors, int perHost) {
+        this.downloader = downloader;
+        this.downloadersPool = Executors.newFixedThreadPool(downloaders);
+        this.extractorsPool = Executors.newFixedThreadPool(extractors);
+        this.hostDownloaders = new HashMap<>();
+        this.perHost = perHost;
+    }
 
     public static void main(String[] args) {
         Objects.requireNonNull(args);
@@ -28,9 +39,9 @@ public class WebCrawler implements Crawler {
                 wc.download(url, depth);
             }
         } catch (NumberFormatException e) {
-            System.out.println("Invalid argument(s)");
+            System.out.println("The integer numbers expected in arguments");
         } catch (IOException e) {
-            System.out.println("An error occurred while initializing downloader");
+            System.out.println("An error occurred while initializing downloader: " + e.getMessage());
         }
     }
 
@@ -42,11 +53,6 @@ public class WebCrawler implements Crawler {
         return Integer.parseInt(args[i]);
     }
 
-    public WebCrawler(Downloader downloader, int downloaders, int extractors, int perHost) {
-        this.downloader = downloader;
-        this.downloaderPool = Executors.newFixedThreadPool(downloaders);
-        this.extractorPool = Executors.newFixedThreadPool(extractors);
-    }
 
     @Override
     public Result download(String url, int depth) {
@@ -54,7 +60,7 @@ public class WebCrawler implements Crawler {
         Set<String> successful = ConcurrentHashMap.newKeySet();
         Set<String> was = ConcurrentHashMap.newKeySet();
 
-        BlockingQueue<String> nextLevel = new ArrayBlockingQueue<>(1337);
+        BlockingQueue<String> nextLevel = new LinkedBlockingQueue<>();
         Phaser phaser = new Phaser(1);
 
         nextLevel.add(url);
@@ -62,43 +68,95 @@ public class WebCrawler implements Crawler {
             List<String> currentLevel = new ArrayList<>();
             nextLevel.drainTo(currentLevel);
 
-
-            System.out.println(phaser.getPhase());
             currentLevel.stream()
                     .filter(was::add)
-                    .forEach(thatUrl -> {
-                        phaser.register();
-                        downloaderPool.submit(() -> {
-                            try {
-                                Document document = downloader.download(thatUrl);
-                                phaser.register();
-                                successful.add(thatUrl);
-                                extractorPool.submit(() -> {
-                                    try {
-                                        nextLevel.addAll(document.extractLinks());
-                                    } catch (IOException e) {
-                                        failed.put(thatUrl, e);
-                                    } finally {
-                                        phaser.arriveAndDeregister();
-                                    }
-                                });
-                            } catch (IOException e) {
-                                failed.put(thatUrl, e);
-                            } finally {
-                                phaser.arriveAndDeregister();
-                            }
-                        });
-                    });
+                    .forEach(thatUrl ->
+                            addDownloading(thatUrl, phaser, successful, failed, nextLevel));
 
             phaser.arriveAndAwaitAdvance();
-
         }
+
+//        System.out.println(successful.size() + " " + failed.size() + " " + was.size());
         return new Result(List.copyOf(successful), failed);
+    }
+
+    private void addDownloading(String url, Phaser phaser, Set<String> successful,
+                                Map<String, IOException> failed, Queue<String> nextLevel) {
+
+        String host;
+        try {
+            host = URLUtils.getHost(url);
+        } catch (MalformedURLException e) {
+            failed.put(url, e);
+            return;
+        }
+        HostDownloader hostDownloader = hostDownloaders.computeIfAbsent(host, s -> new HostDownloader());
+
+        phaser.register();
+        hostDownloader.add(() -> {
+//        downloadersPool.submit(() -> {
+            try {
+                Document document = downloader.download(url);
+                phaser.register();
+                successful.add(url);
+                addExtracting(document, url, phaser, failed, nextLevel);
+            } catch (IOException e) {
+                failed.put(url, e);
+            } finally {
+                phaser.arriveAndDeregister();
+            }
+        });
+    }
+
+    private void addExtracting(Document document, String url, Phaser phaser,
+                               Map<String, IOException> failed, Queue<String> nextLevel) {
+        extractorsPool.submit(() -> {
+            try {
+                nextLevel.addAll(document.extractLinks());
+            } catch (IOException e) {
+                failed.put(url, e);
+            } finally {
+                phaser.arriveAndDeregister();
+            }
+        });
     }
 
     @Override
     public void close() {
-        extractorPool.shutdownNow();
-        downloaderPool.shutdownNow();
+        extractorsPool.shutdownNow();
+        downloadersPool.shutdownNow();
+    }
+
+    private class HostDownloader {
+        private final Queue<Runnable> downloadQueue;
+        private int downloading;
+
+        public HostDownloader() {
+            this.downloading = 0;
+            downloadQueue = new ArrayDeque<>();
+        }
+
+        public synchronized void add(Runnable task) {
+            downloadQueue.add(task);
+            downloadNext();
+        }
+
+        private synchronized void downloadNext() {
+            if (downloading < perHost) {
+                Runnable task = downloadQueue.poll();
+                if (task != null) {
+                    downloading++;
+                    downloadersPool.submit(() -> {
+                        task.run();
+                        finished();
+                    });
+                }
+            }
+        }
+
+        private synchronized void finished() {
+            downloading--;
+            downloadNext();
+        }
     }
 }
