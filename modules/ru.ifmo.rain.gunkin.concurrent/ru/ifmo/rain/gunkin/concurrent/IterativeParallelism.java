@@ -224,9 +224,9 @@ public class IterativeParallelism implements AdvancedIP {
         }
     }
 
-    private static <T> List<Stream<T>> divideList(List<T> list, int partsNumber) {
-        int step = list.size() / partsNumber;
-        int rest = list.size() % partsNumber;
+    private static <T> List<Stream<T>> divideList(List<T> list, int maxPartCount) {
+        int step = list.size() / maxPartCount;
+        int rest = list.size() % maxPartCount;
 
         List<Stream<T>> parts = new ArrayList<>();
         for (int l = 0; l < list.size(); ) {
