@@ -14,10 +14,19 @@ public class IterativeParallelism implements AdvancedIP {
 
     private final ParallelMapper mapper;
 
+    /**
+     * Creates an instance of {@code IterativeParallelism} without {@code ParallelMapper}.
+     */
     public IterativeParallelism() {
         this.mapper = null;
     }
 
+    /**
+     * Creates an instance of {@code IterativeParallelism}
+     * with specified {@code ParallelMapper}.
+     *
+     * @param mapper the {@code ParallelMapper}
+     */
     public IterativeParallelism(ParallelMapper mapper) {
         this.mapper = mapper;
     }
@@ -190,7 +199,7 @@ public class IterativeParallelism implements AdvancedIP {
             }
             joinThreads(workers);
         } else {
-            results =  mapper.map(streamMapper, parts);
+            results = mapper.map(streamMapper, parts);
         }
 
         return resultStreamMapper.apply(results.stream());
@@ -198,14 +207,16 @@ public class IterativeParallelism implements AdvancedIP {
 
     private static void joinThreads(List<Thread> threads) throws InterruptedException {
         InterruptedException ie = null;
-        for (Thread thread : threads) {
+        for (int i = 0; i < threads.size(); i++) {
             try {
-                thread.join();
+                threads.get(i).join();
             } catch (InterruptedException e) {
                 if (ie == null) {
                     ie = new InterruptedException("Executing thread was interrupted during joining thread");
                 }
                 ie.addSuppressed(e);
+
+                i--;
             }
         }
         if (ie != null) {
