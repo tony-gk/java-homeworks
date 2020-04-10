@@ -335,7 +335,7 @@ public class Implementor implements Impler {
      * Checks that specified {@code token} and {@code path} are not {@code null}.
      *
      * @param token reference to check for nullity
-     * @param path reference to check for nullity
+     * @param path  reference to check for nullity
      * @throws ImplerException if the {@code token} or {@code path} is null
      */
     protected void requireNotNull(Class<?> token, Path path) throws ImplerException {
@@ -348,15 +348,6 @@ public class Implementor implements Impler {
      * Wrapper of {@link Method}. It's used to prevent identical implementations of abstract methods.
      */
     private static class MethodSignature {
-        /**
-         * Initial value used for calculating hash.
-         */
-        private static final int SEED = 23;
-        /**
-         * Prime number used for calculating hash.
-         */
-        private static final int PRIME_NUMBER = 37;
-
         /**
          * Instance wrapped by class.
          */
@@ -401,11 +392,9 @@ public class Implementor implements Impler {
          */
         @Override
         public int hashCode() {
-            int hash = SEED;
-            hash = PRIME_NUMBER * hash + Objects.hashCode(method.getReturnType());
-            hash = PRIME_NUMBER * hash + Arrays.hashCode(method.getParameterTypes());
-            hash = PRIME_NUMBER * hash + Objects.hashCode(method.getName());
-            return hash;
+            return Objects.hash(method.getReturnType(),
+                    Arrays.hashCode(method.getParameterTypes()),
+                    method.getName());
         }
     }
 
