@@ -1,0 +1,27 @@
+#!/bin/bash
+
+package=$1
+class_name=$2
+mode=$3
+salt=$4
+
+script_dirname=$(dirname "$(realpath "$0")")
+cd "$script_dirname" || exit
+
+mod_name=ru.ifmo.rain.gunkin.$package
+mod_dir=ru/ifmo/rain/gunkin/$package
+
+src=../../modules/${mod_name}
+out=../out/$mod_name
+
+java_advanced_2020=../../../java-advanced-2020
+mod_path=${java_advanced_2020}/artifacts:${java_advanced_2020}/lib:${out}
+
+javac --module-path "$mod_path" "${src}"/module-info.java "${src}/${mod_dir}"/*.java -d "$out"
+
+echo "$mod_name"."$class_name"
+java --module-path "$mod_path" --add-modules "$mod_name" \
+  -m info.kgeorgiy.java.advanced."$package" \
+  "$mode" \
+  "$mod_name"."$class_name" \
+  "$salt"

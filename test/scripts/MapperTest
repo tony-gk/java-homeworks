@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd ..
+find ../modules -wholename "*/mapper/*.java" > sources.txt
+find ../modules -wholename "*/concurrent/*.java" >> sources.txt
+javac -d . @sources.txt &&
+
+java -cp . -p . -m info.kgeorgiy.java.advanced.mapper advanced ru.ifmo.rain.gunkin.concurrent.IterativeParallelism
+
+rm sources.txt

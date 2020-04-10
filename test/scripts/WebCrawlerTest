@@ -1,0 +1,9 @@
+#!/bin/bash
+
+base_test_script=$(dirname "$0")/BaseTest
+
+package="crawler"
+mode="hard"
+class_name="WebCrawler"
+
+bash "$base_test_script" $package $class_name $mode

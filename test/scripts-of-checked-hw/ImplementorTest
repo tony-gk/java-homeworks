@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cd ..
+find ../modules -wholename "*/implementor/*.java" > scripts/sources.txt
+javac -d . @scripts/sources.txt
+
+java -cp . -p . -m info.kgeorgiy.java.advanced.implementor \
+                   jar-advanced \
+                   ru.ifmo.rain.gunkin.implementor.JarImplementor "$1"
+
+rm scripts/sources.txt
+
