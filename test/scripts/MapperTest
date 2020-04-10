@@ -1,10 +1,27 @@
 #!/bin/bash
 
-cd ..
-find ../modules -wholename "*/mapper/*.java" > sources.txt
-find ../modules -wholename "*/concurrent/*.java" >> sources.txt
-javac -d . @sources.txt &&
+package=concurrent
+class_name=IterativeParallelism
+mode=advanced
+salt=""
 
-java -cp . -p . -m info.kgeorgiy.java.advanced.mapper advanced ru.ifmo.rain.gunkin.concurrent.IterativeParallelism
+script_dirname=$(dirname "$(realpath "$0")")
+cd "$script_dirname" || exit
 
-rm sources.txt
+mod_name=ru.ifmo.rain.gunkin.$package
+mod_dir=ru/ifmo/rain/gunkin/$package
+
+src=../../modules/${mod_name}
+out=../out/$mod_name
+
+java_advanced_2020=../../../java-advanced-2020
+mod_path=${java_advanced_2020}/artifacts:${java_advanced_2020}/lib:${out}
+
+javac --module-path "$mod_path" "${src}"/module-info.java "${src}/${mod_dir}"/*.java -d "$out"
+
+java --module-path "$mod_path" --add-modules "$mod_name" \
+  -m info.kgeorgiy.java.advanced.mapper \
+  "$mode" \
+  "$mod_name"."$class_name" \
+  "$salt"
+

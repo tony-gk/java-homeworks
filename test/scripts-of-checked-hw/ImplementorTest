@@ -1,12 +1,9 @@
 #!/bin/bash
 
-cd ..
-find ../modules -wholename "*/implementor/*.java" > scripts/sources.txt
-javac -d . @scripts/sources.txt
+base_test_script=$(dirname "$0")/BaseTest
 
-java -cp . -p . -m info.kgeorgiy.java.advanced.implementor \
-                   jar-advanced \
-                   ru.ifmo.rain.gunkin.implementor.JarImplementor "$1"
+package="implementor"
+mode="jar-advanced"
+class_name="JarImplementor"
 
-rm scripts/sources.txt
-
+bash "$base_test_script" $package $class_name $mode

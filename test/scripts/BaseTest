@@ -19,7 +19,6 @@ mod_path=${java_advanced_2020}/artifacts:${java_advanced_2020}/lib:${out}
 
 javac --module-path "$mod_path" "${src}"/module-info.java "${src}/${mod_dir}"/*.java -d "$out"
 
-echo "$mod_name"."$class_name"
 java --module-path "$mod_path" --add-modules "$mod_name" \
   -m info.kgeorgiy.java.advanced."$package" \
   "$mode" \

@@ -1,5 +1,9 @@
 #!/bin/bash
 
-cd ..
-javac -d . ../modules/ru/ifmo/rain/gunkin/arrayset/* &&
-java -cp . -p . -m info.kgeorgiy.java.advanced.arrayset NavigableSet ru.ifmo.rain.gunkin.arrayset.ArraySet "$1"
+base_test_script=$(dirname "$0")/BaseTest
+
+package="arrayset"
+mode="NavigableSet"
+class_name="ArraySet"
+
+bash "$base_test_script" $package $class_name $mode

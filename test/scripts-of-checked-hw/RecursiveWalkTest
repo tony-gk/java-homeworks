@@ -1,5 +1,9 @@
 #!/bin/bash
 
-cd ..
-javac -d . ../modules/ru/ifmo/rain/gunkin/walk/* &&
-java -cp . -p . -m info.kgeorgiy.java.advanced.walk RecursiveWalk ru.ifmo.rain.gunkin.walk.RecursiveWalk "$1"
+base_test_script=$(dirname "$0")/BaseTest
+
+package="walk"
+mode="RecursiveWalk"
+class_name="RecursiveWalk"
+
+bash "$base_test_script" $package $class_name $mode

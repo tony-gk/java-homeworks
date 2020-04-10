@@ -1,11 +1,9 @@
 #!/bin/bash
 
-cd ..
-find ../modules/ -wholename "*/student/*.java" > scripts/sources.txt
-javac -d . @scripts/sources.txt &&
+base_test_script=$(dirname "$0")/BaseTest
 
-java -cp . -p . -m info.kgeorgiy.java.advanced.student \
-                   AdvancedStudentGroupQuery \
-                   ru.ifmo.rain.gunkin.student.StudentDB "85"
+package="student"
+mode="AdvancedStudentGroupQuery"
+class_name="StudentDB"
 
-rm scripts/sources.txt
+bash "$base_test_script" $package $class_name $mode
