@@ -19,7 +19,7 @@ public class WebCrawler implements Crawler {
         this.downloader = downloader;
         this.downloadersPool = Executors.newFixedThreadPool(downloaders);
         this.extractorsPool = Executors.newFixedThreadPool(extractors);
-        this.hostDownloaders = new HashMap<>();
+        this.hostDownloaders = new ConcurrentHashMap<>();
         this.perHost = perHost;
     }
 
@@ -57,7 +57,7 @@ public class WebCrawler implements Crawler {
     @Override
     public Result download(String url, int depth) {
         Map<String, IOException> failed = new ConcurrentHashMap<>();
-        Set<String> successful = ConcurrentHashMap.newKeySet();
+        Set<String> successfulLoaded = ConcurrentHashMap.newKeySet();
         Set<String> was = ConcurrentHashMap.newKeySet();
 
         BlockingQueue<String> nextLevel = new LinkedBlockingQueue<>();
@@ -71,12 +71,12 @@ public class WebCrawler implements Crawler {
             currentLevel.stream()
                     .filter(was::add)
                     .forEach(thatUrl ->
-                            addDownloading(thatUrl, phaser, successful, failed, nextLevel));
+                            addDownloading(thatUrl, phaser, successfulLoaded, failed, nextLevel));
 
             phaser.arriveAndAwaitAdvance();
         }
 
-        return new Result(List.copyOf(successful), failed);
+        return new Result(List.copyOf(successfulLoaded), failed);
     }
 
     private void addDownloading(String url, Phaser phaser, Set<String> successful,
