@@ -61,9 +61,9 @@ public class WebCrawler implements Crawler {
         Set<String> was = ConcurrentHashMap.newKeySet();
 
         BlockingQueue<String> nextLevel = new LinkedBlockingQueue<>();
+        nextLevel.add(url);
         Phaser phaser = new Phaser(1);
 
-        nextLevel.add(url);
         for (int i = 0; i < depth; i++) {
             List<String> currentLevel = new ArrayList<>();
             nextLevel.drainTo(currentLevel);
@@ -145,13 +145,13 @@ public class WebCrawler implements Crawler {
                     downloading++;
                     downloadersPool.submit(() -> {
                         task.run();
-                        finished();
+                        done();
                     });
                 }
             }
         }
 
-        private synchronized void finished() {
+        private synchronized void done() {
             downloading--;
             downloadNext();
         }
