@@ -53,23 +53,20 @@ public class ParallelMapperImpl implements ParallelMapper {
         return resultList.getList();
     }
 
-    /** Stops all threads. All unfinished mappings leave in undefined state. */
+    /**
+     * Stops all threads. All unfinished mappings leave in undefined state.
+     */
     @Override
     public void close() {
         threads.forEach(Thread::interrupt);
-
-        boolean interrupted = false;
-        for (int i = 0; i < threads.size(); i++) {
-            try {
-                threads.get(i).join();
-            } catch (InterruptedException e) {
-                i--;
-                interrupted = true;
-            }
-        }
-        if (interrupted) {
-            Thread.currentThread().interrupt();
-        }
+        threads.forEach(
+                thread -> {
+                    try {
+                        thread.join();
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+        );
     }
 
     private void runTask() throws InterruptedException {
