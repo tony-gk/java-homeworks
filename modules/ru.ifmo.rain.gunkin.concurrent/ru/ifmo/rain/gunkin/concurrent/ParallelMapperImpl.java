@@ -12,13 +12,13 @@ public class ParallelMapperImpl implements ParallelMapper {
     /**
      * Creates a {@code ParallelMapper} instance with the specified number of {@code threads}.
      *
-     * @param threads number of threads
+     * @param threadCount number of threads
      */
-    public ParallelMapperImpl(int threads) {
-        this.threads = new ArrayList<>(threads);
+    public ParallelMapperImpl(int threadCount) {
+        this.threads = new ArrayList<>(threadCount);
         this.tasks = new ArrayDeque<>();
 
-        for (int i = 0; i < threads; i++) {
+        for (int i = 0; i < threadCount; i++) {
             this.threads.add(new Thread(() -> {
                 try {
                     while (!Thread.interrupted()) {
