@@ -9,16 +9,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class RecursiveWalk {
-    private final Path inputFile;
-    private final Path outputFile;
+    private final Path input;
+    private final Path output;
 
-    RecursiveWalk(final String inputFile, final String outputFile) throws WalkerException {
-        this.inputFile = getPath(inputFile, "Invalid path to input file");
-        this.outputFile = getPath(outputFile, "Invalid path to output file");
+    RecursiveWalk(final String inputFileName, final String outputFileName) throws WalkerException {
+        this.input = getPath(inputFileName, "Invalid path to input file");
+        this.output = getPath(outputFileName, "Invalid path to output file");
 
-        if (this.outputFile.getParent() != null && Files.notExists(this.outputFile.getParent())) {
+        if (this.output.getParent() != null && Files.notExists(this.output.getParent())) {
             try {
-                Files.createDirectories(this.outputFile.getParent());
+                Files.createDirectories(this.output.getParent());
             } catch (IOException e) {
                 throw new WalkerException("Error during creating directory: " + e.getMessage(), e);
             } catch (SecurityException e) {
@@ -36,8 +36,8 @@ public class RecursiveWalk {
     }
 
     private void walk() throws WalkerException {
-        try (BufferedReader reader = Files.newBufferedReader(inputFile)) {
-            try (BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
+        try (BufferedReader reader = Files.newBufferedReader(input)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(output)) {
                 FnvRecursiveFileVisitor visitor = new FnvRecursiveFileVisitor(writer);
                 try {
                     String filePath;
@@ -53,20 +53,16 @@ public class RecursiveWalk {
                 }
             } catch (IOException e) {
                 throw new WalkerException("Error during opening output file for writing.", e);
-            } catch (SecurityException e) {
-                throw new WalkerException("Write permission denied.", e);
             }
         } catch (IOException e) {
             throw new WalkerException("Error during opening input file for reading.", e);
-        } catch (SecurityException e) {
-            throw new WalkerException("Read permission denied.", e);
         }
     }
 
     public static void main(String[] args) {
         try {
             if (args == null || args.length < 2 || args[0] == null || args[1] == null) {
-                throw new WalkerException("Excepted two arguments");
+                throw new WalkerException("Excepted 2 arguments");
             }
             new RecursiveWalk(args[0], args[1]).walk();
         } catch (WalkerException e) {

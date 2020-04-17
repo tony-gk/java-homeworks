@@ -8,7 +8,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 
 public class FnvRecursiveFileVisitor extends SimpleFileVisitor<Path> {
-    private static final int FNV_32_PRIME = 0x01000193;
+    private static final int PRIME_NUMBER = 0x01000193;
     private static final int BUFFER_SIZE = 1 << 10;
 
     private final BufferedWriter writer;
@@ -38,7 +38,7 @@ public class FnvRecursiveFileVisitor extends SimpleFileVisitor<Path> {
             int read;
             while ((read = reader.read(buffer)) != -1) {
                 for (int i = 0; i < read; i++) {
-                    hash *= FNV_32_PRIME;
+                    hash *= PRIME_NUMBER;
                     hash ^= buffer[i] & 255;
                 }
             }
