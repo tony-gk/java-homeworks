@@ -24,8 +24,7 @@ public class ParallelMapperImpl implements ParallelMapper {
                     while (!Thread.interrupted()) {
                         runTask();
                     }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                } catch (InterruptedException ignored) {
                 }
             }));
             this.threads.get(i).start();
