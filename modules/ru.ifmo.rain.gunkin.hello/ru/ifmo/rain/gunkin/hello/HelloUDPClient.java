@@ -68,11 +68,13 @@ public class HelloUDPClient implements HelloClient {
                             socket.receive(responsePacket);
 
                             String response = new String(responsePacket.getData(), responsePacket.getOffset(), responsePacket.getLength(), StandardCharsets.UTF_8);
-                            if (isValidResponse(response, request)) {
+                            if (isValidEvilResponse(response, threadNumber, i)) {
                                 System.out.println("Response: " + response);
                                 break;
+                            } else {
+                                System.err.println("Bad response: " + response);
                             }
-                        } catch(SocketTimeoutException e) {
+                        } catch (SocketTimeoutException e) {
                             System.out.println("Timeout of receiving response has expired");
                         } catch (IOException e) {
                             System.out.println("I/O error occurred: " + e.getMessage());
@@ -87,6 +89,10 @@ public class HelloUDPClient implements HelloClient {
 
         private boolean isValidResponse(String response, String request) {
             return response.length() != request.length() && response.contains(request);
+        }
+
+        private boolean isValidEvilResponse(String response, int threadNumber, int requestNumber) {
+            return response.matches("[\\D]*" + threadNumber+ "[\\D]*" + requestNumber+ "[\\D]*");
         }
 
         private DatagramPacket createRequestPacket(String request) {
