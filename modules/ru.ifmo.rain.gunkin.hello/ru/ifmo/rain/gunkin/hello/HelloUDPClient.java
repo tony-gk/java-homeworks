@@ -25,60 +25,79 @@ public class HelloUDPClient implements HelloClient {
 
         ExecutorService senderPool = Executors.newFixedThreadPool(threadCount);
         for (int i = 0; i < threadCount; i++) {
-            int finalIndex = i;
-            senderPool.submit(() ->
-                    sendRequests(socketAddress, prefix, requestCount, finalIndex));
+            senderPool.submit(new RequestSender(socketAddress, prefix, requestCount, i));
         }
+
         senderPool.shutdown();
         try {
-            senderPool.awaitTermination(threadCount * requestCount * 1000, TimeUnit.SECONDS);
+            senderPool.awaitTermination(threadCount * requestCount * 10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private void sendRequests(SocketAddress socketAddress, String prefix, int requestCount, int threadNumber) {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            socket.setSoTimeout(1000);
+    private static class RequestSender implements Runnable {
+        private static final int TIMEOUT = 1000;
+
+        private final SocketAddress socketAddress;
+        private final String prefix;
+        private final int requestCount;
+        private final int threadNumber;
+
+        private RequestSender(SocketAddress socketAddress, String prefix, int requestCount, int threadNumber) {
+            this.socketAddress = socketAddress;
+            this.prefix = prefix;
+            this.requestCount = requestCount;
+            this.threadNumber = threadNumber;
+        }
+
+        @Override
+        public void run() {
+            try (DatagramSocket socket = new DatagramSocket()) {
+                socket.setSoTimeout(TIMEOUT);
+
+                DatagramPacket responsePacket = createResponsePacket(socket);
+                for (int i = 0; i < requestCount; i++) {
+                    String request = prefix + threadNumber + "_" + i;
+                    DatagramPacket requestPacket = createRequestPacket(request);
+
+                    while (!socket.isClosed()) {
+                        try {
+                            socket.send(requestPacket);
+                            System.out.println("Request: " + request);
+                            socket.receive(responsePacket);
+
+                            String response = new String(responsePacket.getData(), responsePacket.getOffset(), responsePacket.getLength(), StandardCharsets.UTF_8);
+                            if (isValidResponse(response, request)) {
+                                System.out.println("Response: " + response);
+                                break;
+                            }
+                        } catch(SocketTimeoutException e) {
+                            System.out.println("Timeout of receiving response has expired");
+                        } catch (IOException e) {
+                            System.out.println("I/O error occurred: " + e.getMessage());
+                        }
+                    }
+
+                }
+            } catch (SocketException e) {
+                System.out.println("Error occurred during socket creation: " + e.getMessage());
+            }
+        }
+
+        private boolean isValidResponse(String response, String request) {
+            return response.length() != request.length() && response.contains(request);
+        }
+
+        private DatagramPacket createRequestPacket(String request) {
+            byte[] requestBuffer = request.getBytes(StandardCharsets.UTF_8);
+            return new DatagramPacket(requestBuffer, requestBuffer.length, socketAddress);
+        }
+
+        private DatagramPacket createResponsePacket(DatagramSocket socket) throws SocketException {
             byte[] responseBuffer;
             responseBuffer = new byte[socket.getReceiveBufferSize()];
-            DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-            for (int i = 0; i < requestCount; i++) {
-                String request = prefix + threadNumber + "_" + i;
-                byte[] requestBuffer = request.getBytes(StandardCharsets.UTF_8);
-                DatagramPacket requestPacket = new DatagramPacket(requestBuffer, requestBuffer.length, socketAddress);
-
-                while (!socket.isClosed()) {
-                    System.out.println("Request: " + request);
-                    try {
-                        socket.send(requestPacket);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-
-                    try {
-                        socket.receive(responsePacket);
-                    } catch (SocketTimeoutException e) {
-                        continue;
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-                    String response = new String(responsePacket.getData(), responsePacket.getOffset(), responsePacket.getLength(), StandardCharsets.UTF_8);
-                    if (response.length() != request.length() &&
-                            response.contains(request)) {
-                        System.out.println("Response: " + response);
-                        break;
-                    } else {
-                        System.out.println("Bad response: " + response);
-                    }
-                }
-
-            }
-        } catch (
-                SocketException e) {
-            e.printStackTrace();
+            return new DatagramPacket(responseBuffer, responseBuffer.length);
         }
     }
 
