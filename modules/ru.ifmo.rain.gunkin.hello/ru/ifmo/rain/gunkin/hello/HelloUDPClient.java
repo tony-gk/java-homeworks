@@ -57,7 +57,7 @@ public class HelloUDPClient implements HelloClient {
                 socket.setSoTimeout(TIMEOUT);
 
                 DatagramPacket requestPacket = new DatagramPacket(new byte[0], 0, socketAddress);
-                DatagramPacket responsePacket = createResponsePacket(socket);
+                DatagramPacket responsePacket = createReceivePacket(socket);
                 for (int i = 0; i < requestCount; i++) {
                     String request = prefix + threadNumber + "_" + i;
                     setString(requestPacket, request);
@@ -72,20 +72,27 @@ public class HelloUDPClient implements HelloClient {
                             if (isValidEvilResponse(response, threadNumber, i)) {
                                 System.out.println("Response: " + response);
                                 break;
-                            } else {
-                                System.err.println("Bad response: " + response);
                             }
                         } catch (SocketTimeoutException e) {
-                            System.out.println("Timeout of receiving response has expired");
+                            System.err.println("Timeout of receiving response has expired");
                         } catch (IOException e) {
-                            System.out.println("I/O error occurred: " + e.getMessage());
+                            System.err.println("I/O error occurred: " + e.getMessage());
                         }
                     }
-
                 }
             } catch (SocketException e) {
-                System.out.println("Error occurred during socket creation: " + e.getMessage());
+                System.err.println("Error occurred during socket creation: " + e.getMessage());
             }
+        }
+
+        private boolean isValidEvilResponse(String response, int threadNumber, int requestNumber) {
+            return response.matches("[\\D]*" + threadNumber+ "[\\D]*" + requestNumber+ "[\\D]*");
+        }
+
+        private DatagramPacket createReceivePacket(DatagramSocket socket) throws SocketException {
+            byte[] responseBuffer;
+            responseBuffer = new byte[socket.getReceiveBufferSize()];
+            return new DatagramPacket(responseBuffer, responseBuffer.length);
         }
 
         private void setString(DatagramPacket packet, String s) {
@@ -94,19 +101,6 @@ public class HelloUDPClient implements HelloClient {
             packet.setLength(buffer.length);
         }
 
-        private boolean isValidResponse(String response, String request) {
-            return response.contains(request);
-        }
-
-        private boolean isValidEvilResponse(String response, int threadNumber, int requestNumber) {
-            return response.matches("[\\D]*" + threadNumber+ "[\\D]*" + requestNumber+ "[\\D]*");
-        }
-
-        private DatagramPacket createResponsePacket(DatagramSocket socket) throws SocketException {
-            byte[] responseBuffer;
-            responseBuffer = new byte[socket.getReceiveBufferSize()];
-            return new DatagramPacket(responseBuffer, responseBuffer.length);
-        }
     }
 
 }
