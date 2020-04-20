@@ -7,7 +7,6 @@ import java.net.MalformedURLException;
 import java.util.*;
 import java.util.concurrent.*;
 
-
 public class WebCrawler implements Crawler {
     private final Downloader downloader;
     private final ExecutorService downloadersPool;
@@ -24,7 +23,7 @@ public class WebCrawler implements Crawler {
     }
 
     public static void main(String[] args) {
-        Objects.requireNonNull(args);
+        Objects.requireNonNull(args, "Arguments array is null");
         if (args.length == 0) {
             System.out.println("Usage: WebCrawler url [depth [downloaders [extractors [perHost]]]]");
             return;
@@ -49,10 +48,9 @@ public class WebCrawler implements Crawler {
         if (args.length <= i) {
             return 1;
         }
-        Objects.requireNonNull(args[i]);
+        Objects.requireNonNull(args[i], (i + 1) + " argument is null");
         return Integer.parseInt(args[i]);
     }
-
 
     @Override
     public Result download(String url, int depth) {
@@ -60,23 +58,24 @@ public class WebCrawler implements Crawler {
         Set<String> successfulLoaded = ConcurrentHashMap.newKeySet();
         Set<String> was = ConcurrentHashMap.newKeySet();
 
-        BlockingQueue<String> nextLevel = new LinkedBlockingQueue<>();
+        Queue<String> nextLevel = new ConcurrentLinkedQueue<>();
+
         nextLevel.add(url);
         Phaser phaser = new Phaser(1);
 
         for (int i = 0; i < depth; i++) {
-            List<String> currentLevel = new ArrayList<>();
-            nextLevel.drainTo(currentLevel);
-
-            currentLevel.stream()
-                    .filter(was::add)
-                    .forEach(thatUrl ->
-                            addDownloading(thatUrl, phaser, successfulLoaded, failed, nextLevel));
+            int size = nextLevel.size();
+            for (int j = 0; j < size; j++) {
+                String next = nextLevel.poll();
+                if (was.add(next)) {
+                    addDownloading(next, phaser, successfulLoaded, failed, nextLevel);
+                }
+            }
 
             phaser.arriveAndAwaitAdvance();
         }
 
-        return new Result(List.copyOf(successfulLoaded), failed);
+        return new Result(new ArrayList<>(successfulLoaded), failed);
     }
 
     private void addDownloading(String url, Phaser phaser, Set<String> successful,
