@@ -16,7 +16,7 @@ public class ParallelMapperImpl implements ParallelMapper {
      */
     public ParallelMapperImpl(int threadCount) {
         this.threads = new ArrayList<>(threadCount);
-        this.tasks = new ArrayDeque<>();
+        this.tasks = new LinkedList<>();
 
         for (int i = 0; i < threadCount; i++) {
             this.threads.add(new Thread(() -> {
@@ -42,13 +42,32 @@ public class ParallelMapperImpl implements ParallelMapper {
     @Override
     public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
         ResultList<R> resultList = new ResultList<>(args.size());
+        List<RuntimeException> runtimeExceptions = new ArrayList<>();
+
         for (int i = 0; i < args.size(); i++) {
             final int finalIndex = i;
             synchronized (tasks) {
-                tasks.add(() -> resultList.set(finalIndex, f.apply(args.get(finalIndex))));
+                tasks.add(() -> {
+                    R result = null;
+                    try {
+                        result = f.apply(args.get(finalIndex));
+                    } catch (RuntimeException e) {
+                        synchronized (runtimeExceptions) {
+                            runtimeExceptions.add(e);
+                        }
+                    }
+                    resultList.set(finalIndex, result);
+                });
                 tasks.notify();
             }
         }
+
+        if (!runtimeExceptions.isEmpty()) {
+            RuntimeException firstException = runtimeExceptions.get(0);
+            runtimeExceptions.stream().skip(1).forEach(firstException::addSuppressed);
+            throw firstException;
+        }
+
         return resultList.getList();
     }
 
@@ -58,8 +77,7 @@ public class ParallelMapperImpl implements ParallelMapper {
     @Override
     public void close() {
         threads.forEach(Thread::interrupt);
-        threads.forEach(
-                thread -> {
+        threads.forEach(thread -> {
                     try {
                         thread.join();
                     } catch (InterruptedException ignored) {
@@ -89,7 +107,7 @@ public class ParallelMapperImpl implements ParallelMapper {
             this.done = 0;
         }
 
-        public synchronized void set(int index, R value) {
+        private synchronized void set(int index, R value) {
             results.set(index, value);
             done++;
             if (done == results.size()) {
@@ -97,12 +115,11 @@ public class ParallelMapperImpl implements ParallelMapper {
             }
         }
 
-        public synchronized List<R> getList() throws InterruptedException {
+        private synchronized List<R> getList() throws InterruptedException {
             while (done != results.size()) {
                 wait();
             }
             return results;
         }
     }
-
 }
