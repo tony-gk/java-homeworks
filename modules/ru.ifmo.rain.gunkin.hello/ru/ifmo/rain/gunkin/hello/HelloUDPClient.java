@@ -56,10 +56,11 @@ public class HelloUDPClient implements HelloClient {
             try (DatagramSocket socket = new DatagramSocket()) {
                 socket.setSoTimeout(TIMEOUT);
 
+                DatagramPacket requestPacket = new DatagramPacket(new byte[0], 0, socketAddress);
                 DatagramPacket responsePacket = createResponsePacket(socket);
                 for (int i = 0; i < requestCount; i++) {
                     String request = prefix + threadNumber + "_" + i;
-                    DatagramPacket requestPacket = createRequestPacket(request);
+                    setString(requestPacket, request);
 
                     while (!socket.isClosed()) {
                         try {
@@ -87,17 +88,18 @@ public class HelloUDPClient implements HelloClient {
             }
         }
 
+        private void setString(DatagramPacket packet, String s) {
+            byte[] buffer = s.getBytes(StandardCharsets.UTF_8);
+            packet.setData(buffer);
+            packet.setLength(buffer.length);
+        }
+
         private boolean isValidResponse(String response, String request) {
-            return response.length() != request.length() && response.contains(request);
+            return response.contains(request);
         }
 
         private boolean isValidEvilResponse(String response, int threadNumber, int requestNumber) {
             return response.matches("[\\D]*" + threadNumber+ "[\\D]*" + requestNumber+ "[\\D]*");
-        }
-
-        private DatagramPacket createRequestPacket(String request) {
-            byte[] requestBuffer = request.getBytes(StandardCharsets.UTF_8);
-            return new DatagramPacket(requestBuffer, requestBuffer.length, socketAddress);
         }
 
         private DatagramPacket createResponsePacket(DatagramSocket socket) throws SocketException {
