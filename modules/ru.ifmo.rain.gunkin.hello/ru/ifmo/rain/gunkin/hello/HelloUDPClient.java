@@ -5,6 +5,8 @@ import info.kgeorgiy.java.advanced.hello.HelloClient;
 import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -100,7 +102,29 @@ public class HelloUDPClient implements HelloClient {
             packet.setData(buffer);
             packet.setLength(buffer.length);
         }
-
     }
 
+    /**
+     * Entry point into the application.
+     *
+     * @param args Usage: {@code <host> <port> <prefix> <threadCount> <requestCount>}
+     */
+    public static void main(String[] args) {
+        Objects.requireNonNull(args, "Arguments array is null");
+        if (args.length != 5) {
+            System.err.println("Expected 5 arguments");
+            return;
+        }
+
+        if (Arrays.stream(args).anyMatch(Objects::isNull)) {
+            System.err.println("Arguments must not be null");
+            return;
+        }
+
+        try {
+            new HelloUDPClient().run(args[0], Integer.parseInt(args[1]), args[2], Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+        } catch (NumberFormatException e) {
+            System.err.println("Integer arguments expected");
+        }
+    }
 }

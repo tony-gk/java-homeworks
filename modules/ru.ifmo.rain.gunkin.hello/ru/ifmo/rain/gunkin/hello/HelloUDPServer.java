@@ -7,12 +7,14 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HelloUDPServer implements HelloServer {
+    private final static int QUEUE_MAX_SIZE = 100_000;
+
     private DatagramSocket socket;
     private ExecutorService requestHandlerPool;
     private Thread listener;
@@ -34,8 +36,11 @@ public class HelloUDPServer implements HelloServer {
             return;
         }
 
+        requestHandlerPool = new ThreadPoolExecutor(threadCount, threadCount,
+                0L, TimeUnit.MICROSECONDS,
+                new LinkedBlockingQueue<>(QUEUE_MAX_SIZE), new ThreadPoolExecutor.DiscardPolicy());
+
         closed = new AtomicBoolean(false);
-        requestHandlerPool = Executors.newFixedThreadPool(threadCount);
         listener = new Thread(this::listen);
         listener.start();
     }
@@ -95,4 +100,28 @@ public class HelloUDPServer implements HelloServer {
         }
     }
 
+
+    /**
+     * Entry point into the application.
+     *
+     * @param args Usage: {@code }
+     */
+    public static void main(String[] args) {
+        Objects.requireNonNull(args, "Arguments array is null");
+        if (args.length != 2) {
+            System.err.println("Expected 2 arguments");
+            return;
+        }
+
+        if (Arrays.stream(args).anyMatch(Objects::isNull)) {
+            System.err.println("Arguments must not be null");
+            return;
+        }
+
+        try {
+            new HelloUDPServer().start(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+        } catch (NumberFormatException e) {
+            System.err.println("Integer arguments expected");
+        }
+    }
 }
