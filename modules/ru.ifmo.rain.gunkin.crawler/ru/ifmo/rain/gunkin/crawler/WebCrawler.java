@@ -54,73 +54,82 @@ public class WebCrawler implements Crawler {
 
     @Override
     public Result download(String url, int depth) {
-        Map<String, IOException> failed = new ConcurrentHashMap<>();
-        Set<String> successfulLoaded = ConcurrentHashMap.newKeySet();
-        Set<String> was = ConcurrentHashMap.newKeySet();
-
-        Queue<String> nextLevel = new ConcurrentLinkedQueue<>();
-
-        nextLevel.add(url);
-        Phaser phaser = new Phaser(1);
-
-        for (int i = 0; i < depth; i++) {
-            int size = nextLevel.size();
-            for (int j = 0; j < size; j++) {
-                String next = nextLevel.poll();
-                if (was.add(next)) {
-                    addDownloading(next, phaser, successfulLoaded, failed, nextLevel);
-                }
-            }
-
-            phaser.arriveAndAwaitAdvance();
-        }
-
-        return new Result(new ArrayList<>(successfulLoaded), failed);
-    }
-
-    private void addDownloading(String url, Phaser phaser, Set<String> successful,
-                                Map<String, IOException> failed, Queue<String> nextLevel) {
-        String host;
-        try {
-            host = URLUtils.getHost(url);
-        } catch (MalformedURLException e) {
-            failed.put(url, e);
-            return;
-        }
-        HostDownloader hostDownloader = hostDownloaders.computeIfAbsent(host, s -> new HostDownloader());
-
-        phaser.register();
-        hostDownloader.add(() -> {
-            try {
-                Document document = downloader.download(url);
-                phaser.register();
-                successful.add(url);
-                addExtracting(document, url, phaser, failed, nextLevel);
-            } catch (IOException e) {
-                failed.put(url, e);
-            } finally {
-                phaser.arriveAndDeregister();
-            }
-        });
-    }
-
-    private void addExtracting(Document document, String url, Phaser phaser,
-                               Map<String, IOException> failed, Queue<String> nextLevel) {
-        extractorsPool.submit(() -> {
-            try {
-                nextLevel.addAll(document.extractLinks());
-            } catch (IOException e) {
-                failed.put(url, e);
-            } finally {
-                phaser.arriveAndDeregister();
-            }
-        });
+        return new BreadthCrawler(url).go(depth).getResult();
     }
 
     @Override
     public void close() {
         extractorsPool.shutdownNow();
         downloadersPool.shutdownNow();
+    }
+
+    private class BreadthCrawler {
+        private final Phaser phaser = new Phaser(1);
+        private final Map<String, IOException> failed = new ConcurrentHashMap<>();
+        private final Set<String> successful = ConcurrentHashMap.newKeySet();
+        private final Set<String> was = ConcurrentHashMap.newKeySet();
+        private final Queue<String> nextLevel = new ConcurrentLinkedQueue<>();
+
+        private BreadthCrawler(String url) {
+            nextLevel.add(url);
+        }
+
+        private BreadthCrawler go(int depth) {
+            for (int i = 0; i < depth; i++) {
+                int size = nextLevel.size();
+                for (int j = 0; j < size; j++) {
+                    String next = nextLevel.poll();
+                    if (was.add(next)) {
+                        addDownloading(next);
+                    }
+                }
+
+                phaser.arriveAndAwaitAdvance();
+            }
+
+            return this;
+        }
+
+        private Result getResult() {
+            return new Result(new ArrayList<>(successful), failed);
+        }
+
+        private void addDownloading(String url) {
+            String host;
+            try {
+                host = URLUtils.getHost(url);
+            } catch (MalformedURLException e) {
+                failed.put(url, e);
+                return;
+            }
+            HostDownloader hostDownloader = hostDownloaders.computeIfAbsent(host, s -> new HostDownloader());
+
+            phaser.register();
+            hostDownloader.add(() -> {
+                try {
+                    Document document = downloader.download(url);
+                    phaser.register();
+                    successful.add(url);
+                    addExtracting(document, url);
+                } catch (IOException e) {
+                    failed.put(url, e);
+                } finally {
+                    phaser.arriveAndDeregister();
+                }
+            });
+        }
+
+        private void addExtracting(Document document, String url) {
+            extractorsPool.submit(() -> {
+                try {
+                    nextLevel.addAll(document.extractLinks());
+                } catch (IOException e) {
+                    failed.put(url, e);
+                } finally {
+                    phaser.arriveAndDeregister();
+                }
+            });
+        }
     }
 
     private class HostDownloader {
