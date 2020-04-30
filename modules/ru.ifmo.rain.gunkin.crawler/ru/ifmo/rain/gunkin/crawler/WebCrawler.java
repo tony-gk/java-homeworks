@@ -30,10 +30,10 @@ public class WebCrawler implements Crawler {
         }
         try {
             String url = Objects.requireNonNull(args[0]);
-            int depth = getArgumentOrDefault(args, 1);
-            int downloaders = getArgumentOrDefault(args, 2);
-            int extractors = getArgumentOrDefault(args, 3);
-            int perHost = getArgumentOrDefault(args, 4);
+            int depth = getArgumentOrDefault(args, 1, 1);
+            int downloaders = getArgumentOrDefault(args, 2, Runtime.getRuntime().availableProcessors());
+            int extractors = getArgumentOrDefault(args, 3, Runtime.getRuntime().availableProcessors());
+            int perHost = getArgumentOrDefault(args, 4, Integer.MAX_VALUE);
             try (Crawler wc = new WebCrawler(new CachingDownloader(), downloaders, extractors, perHost)) {
                 wc.download(url, depth);
             }
@@ -44,9 +44,9 @@ public class WebCrawler implements Crawler {
         }
     }
 
-    private static int getArgumentOrDefault(String[] args, int i) {
+    private static int getArgumentOrDefault(String[] args, int i, int defaultValue) {
         if (args.length <= i) {
-            return 1;
+            return defaultValue;
         }
         Objects.requireNonNull(args[i], (i + 1) + " argument is null");
         return Integer.parseInt(args[i]);
@@ -54,7 +54,7 @@ public class WebCrawler implements Crawler {
 
     @Override
     public Result download(String url, int depth) {
-        return new BreadthCrawler(url).go(depth).getResult();
+        return new DepthCrawler().goDepth(depth, url);
     }
 
     @Override
@@ -63,38 +63,22 @@ public class WebCrawler implements Crawler {
         downloadersPool.shutdownNow();
     }
 
-    private class BreadthCrawler {
+    private class DepthCrawler {
         private final Phaser phaser = new Phaser(1);
         private final Map<String, IOException> failed = new ConcurrentHashMap<>();
         private final Set<String> successful = ConcurrentHashMap.newKeySet();
         private final Set<String> was = ConcurrentHashMap.newKeySet();
-        private final Queue<String> nextLevel = new ConcurrentLinkedQueue<>();
 
-        private BreadthCrawler(String url) {
-            nextLevel.add(url);
-        }
+        private Result goDepth(int depth, String startUrl) {
+            was.add(startUrl);
 
-        private BreadthCrawler go(int depth) {
-            for (int i = 0; i < depth; i++) {
-                int size = nextLevel.size();
-                for (int j = 0; j < size; j++) {
-                    String next = nextLevel.poll();
-                    if (was.add(next)) {
-                        addDownloading(next);
-                    }
-                }
+            addDownloading(startUrl, depth);
+            phaser.arriveAndAwaitAdvance();
 
-                phaser.arriveAndAwaitAdvance();
-            }
-
-            return this;
-        }
-
-        private Result getResult() {
             return new Result(new ArrayList<>(successful), failed);
         }
 
-        private void addDownloading(String url) {
+        private void addDownloading(String url, int depth) {
             String host;
             try {
                 host = URLUtils.getHost(url);
@@ -108,9 +92,10 @@ public class WebCrawler implements Crawler {
             hostDownloader.add(() -> {
                 try {
                     Document document = downloader.download(url);
-                    phaser.register();
                     successful.add(url);
-                    addExtracting(document, url);
+                    if (depth > 1) {
+                        addExtracting(document, url, depth);
+                    }
                 } catch (IOException e) {
                     failed.put(url, e);
                 } finally {
@@ -119,10 +104,13 @@ public class WebCrawler implements Crawler {
             });
         }
 
-        private void addExtracting(Document document, String url) {
+        private void addExtracting(Document document, String url, int depth) {
+            phaser.register();
             extractorsPool.submit(() -> {
                 try {
-                    nextLevel.addAll(document.extractLinks());
+                    document.extractLinks().stream()
+                            .filter(was::add)
+                            .forEach(link -> addDownloading(link, depth - 1));
                 } catch (IOException e) {
                     failed.put(url, e);
                 } finally {
@@ -138,7 +126,7 @@ public class WebCrawler implements Crawler {
 
         public HostDownloader() {
             this.downloading = 0;
-            downloadQueue = new ArrayDeque<>();
+            downloadQueue = new LinkedList<>();
         }
 
         public synchronized void add(Runnable task) {
