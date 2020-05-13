@@ -7,7 +7,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,7 +16,7 @@ public class HelloUDPServer implements HelloServer {
 
     private DatagramSocket socket;
     private ExecutorService requestHandlerPool;
-    private Thread listener;
+    private Thread receiver;
     private AtomicBoolean closed;
 
 
@@ -32,8 +31,7 @@ public class HelloUDPServer implements HelloServer {
         try {
             socket = new DatagramSocket(port);
         } catch (SocketException e) {
-            System.err.println("Failed to create socket: " + e.getMessage());
-            return;
+            throw new IllegalArgumentException("Failed to create socket", e);
         }
 
         requestHandlerPool = new ThreadPoolExecutor(threadCount, threadCount,
@@ -41,11 +39,11 @@ public class HelloUDPServer implements HelloServer {
                 new LinkedBlockingQueue<>(QUEUE_MAX_SIZE), new ThreadPoolExecutor.DiscardPolicy());
 
         closed = new AtomicBoolean(false);
-        listener = new Thread(this::listen);
-        listener.start();
+        receiver = new Thread(this::receivePackets);
+        receiver.start();
     }
 
-    private void listen() {
+    private void receivePackets() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 DatagramPacket requestPacket = createReceivePacket(socket);
@@ -91,7 +89,7 @@ public class HelloUDPServer implements HelloServer {
     public void close() {
         closed.set(true);
         socket.close();
-        listener.interrupt();
+        receiver.interrupt();
         requestHandlerPool.shutdownNow();
 
         try {
@@ -104,7 +102,7 @@ public class HelloUDPServer implements HelloServer {
     /**
      * Entry point into the application.
      *
-     * @param args Usage: {@code }
+     * @param args Usage: {@code <port> <threadCount>}
      */
     public static void main(String[] args) {
         Objects.requireNonNull(args, "Arguments array is null");
@@ -113,15 +111,22 @@ public class HelloUDPServer implements HelloServer {
             return;
         }
 
-        if (Arrays.stream(args).anyMatch(Objects::isNull)) {
-            System.err.println("Arguments must not be null");
-            return;
+        for (int i = 0; i < args.length; i++) {
+            Objects.requireNonNull(args[i], "Argument " + i + " is null");
         }
 
         try {
-            new HelloUDPServer().start(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+            new HelloUDPServer().start(parseArgument(args[0], "port"), parseArgument(args[1], "count of threads"));
         } catch (NumberFormatException e) {
             System.err.println("Integer arguments expected");
+        }
+    }
+
+    private static int parseArgument(String arg, String name) {
+        try {
+            return Integer.parseInt(arg);
+        } catch (NumberFormatException e) {
+            throw new NumberFormatException("Expected integer " + name);
         }
     }
 }

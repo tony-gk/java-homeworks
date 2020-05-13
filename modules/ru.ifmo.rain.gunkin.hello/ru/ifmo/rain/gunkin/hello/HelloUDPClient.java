@@ -5,7 +5,6 @@ import info.kgeorgiy.java.advanced.hello.HelloClient;
 import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,7 +22,12 @@ public class HelloUDPClient implements HelloClient {
      */
     @Override
     public void run(String host, int port, String prefix, int threadCount, int requestCount) {
-        SocketAddress socketAddress = new InetSocketAddress(host, port);
+        SocketAddress socketAddress;
+        try {
+            socketAddress = new InetSocketAddress(InetAddress.getByName(host), port);
+        } catch (UnknownHostException e) {
+            throw new IllegalArgumentException("Unknown host", e);
+        }
 
         ExecutorService senderPool = Executors.newFixedThreadPool(threadCount);
         for (int i = 0; i < threadCount; i++) {
@@ -32,14 +36,13 @@ public class HelloUDPClient implements HelloClient {
 
         senderPool.shutdown();
         try {
-            senderPool.awaitTermination(threadCount * requestCount * 10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            senderPool.awaitTermination(threadCount * requestCount, TimeUnit.MINUTES);
+        } catch (InterruptedException ignored) {
         }
     }
 
     private static class RequestSender implements Runnable {
-        private static final int TIMEOUT = 1000;
+        private static final int TIMEOUT_MS = 400;
 
         private final SocketAddress socketAddress;
         private final String prefix;
@@ -56,7 +59,7 @@ public class HelloUDPClient implements HelloClient {
         @Override
         public void run() {
             try (DatagramSocket socket = new DatagramSocket()) {
-                socket.setSoTimeout(TIMEOUT);
+                socket.setSoTimeout(TIMEOUT_MS);
 
                 DatagramPacket requestPacket = new DatagramPacket(new byte[0], 0, socketAddress);
                 DatagramPacket responsePacket = createReceivePacket(socket);
@@ -88,7 +91,7 @@ public class HelloUDPClient implements HelloClient {
         }
 
         private boolean isValidEvilResponse(String response, int threadNumber, int requestNumber) {
-            return response.matches("[\\D]*" + threadNumber+ "[\\D]*" + requestNumber+ "[\\D]*");
+            return response.matches("[\\D]*" + threadNumber + "[\\D]*" + requestNumber + "[\\D]*");
         }
 
         private DatagramPacket createReceivePacket(DatagramSocket socket) throws SocketException {
@@ -116,15 +119,25 @@ public class HelloUDPClient implements HelloClient {
             return;
         }
 
-        if (Arrays.stream(args).anyMatch(Objects::isNull)) {
-            System.err.println("Arguments must not be null");
-            return;
+        for (int i = 0; i < args.length; i++) {
+            Objects.requireNonNull(args[i], "Argument " + i + " is null");
         }
 
         try {
-            new HelloUDPClient().run(args[0], Integer.parseInt(args[1]), args[2], Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+            int port = parseArgument(args[1], "port");
+            int threadCount = parseArgument(args[3], "count of threads");
+            int requestCount = parseArgument(args[4], "count of requests");
+            new HelloUDPClient().run(args[0], port, args[2], threadCount, requestCount);
         } catch (NumberFormatException e) {
-            System.err.println("Integer arguments expected");
+            System.err.println(e.getMessage());
+        }
+    }
+
+    private static int parseArgument(String arg, String name) {
+        try {
+            return Integer.parseInt(arg);
+        } catch (NumberFormatException e) {
+            throw new NumberFormatException("Expected integer " + name);
         }
     }
 }
