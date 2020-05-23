@@ -1,13 +1,21 @@
 package ru.ifmo.rain.gunkin.bank;
 
 import java.rmi.*;
+import java.rmi.registry.LocateRegistry;
 import java.rmi.server.*;
 import java.net.*;
 
 public class Server {
     private final static int PORT = 8888;
     public static void main(final String... args) {
-        final RemoteBank bank = new RemoteBankImpl(PORT);
+        try {
+            LocateRegistry.createRegistry(PORT);
+        } catch (RemoteException e) {
+            System.out.println("Cannot create registry: " + e.getMessage());
+            return;
+        }
+
+        final Bank bank = new RemoteBank(PORT);
         try {
             UnicastRemoteObject.exportObject(bank, PORT);
             Naming.rebind("//localhost/bank", bank);

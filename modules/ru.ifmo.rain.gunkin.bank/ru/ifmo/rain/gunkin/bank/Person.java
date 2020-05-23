@@ -1,9 +1,13 @@
 package ru.ifmo.rain.gunkin.bank;
 
-public interface Person {
-    String getFirstName();
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 
-    String getSecondName();
+public interface Person extends Remote {
+    String getFirstName()  throws RemoteException;
 
-    int getPassportID();
+    String getSecondName() throws RemoteException;
+
+    String getPassportId() throws RemoteException;
+
 }

@@ -26,7 +26,7 @@ public class HelloUDPClient implements HelloClient {
         try {
             socketAddress = new InetSocketAddress(InetAddress.getByName(host), port);
         } catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Unknown host", e);
+            throw new IllegalArgumentException("Unknown host: " + host, e);
         }
 
         ExecutorService senderPool = Executors.newFixedThreadPool(threadCount);
@@ -115,22 +115,17 @@ public class HelloUDPClient implements HelloClient {
     public static void main(String[] args) {
         Objects.requireNonNull(args, "Arguments array is null");
         if (args.length != 5) {
-            System.err.println("Expected 5 arguments");
-            return;
+            throw new IllegalArgumentException("Expected 5 arguments");
         }
 
         for (int i = 0; i < args.length; i++) {
             Objects.requireNonNull(args[i], "Argument " + i + " is null");
         }
 
-        try {
-            int port = parseArgument(args[1], "port");
-            int threadCount = parseArgument(args[3], "count of threads");
-            int requestCount = parseArgument(args[4], "count of requests");
-            new HelloUDPClient().run(args[0], port, args[2], threadCount, requestCount);
-        } catch (NumberFormatException e) {
-            System.err.println(e.getMessage());
-        }
+        int port = parseArgument(args[1], "port");
+        int threadCount = parseArgument(args[3], "count of threads");
+        int requestCount = parseArgument(args[4], "count of requests");
+        new HelloUDPClient().run(args[0], port, args[2], threadCount, requestCount);
     }
 
     private static int parseArgument(String arg, String name) {

@@ -107,18 +107,15 @@ public class HelloUDPServer implements HelloServer {
     public static void main(String[] args) {
         Objects.requireNonNull(args, "Arguments array is null");
         if (args.length != 2) {
-            System.err.println("Expected 2 arguments");
-            return;
+            throw new IllegalArgumentException("Expected 2 arguments");
         }
 
         for (int i = 0; i < args.length; i++) {
             Objects.requireNonNull(args[i], "Argument " + i + " is null");
         }
 
-        try {
-            new HelloUDPServer().start(parseArgument(args[0], "port"), parseArgument(args[1], "count of threads"));
-        } catch (NumberFormatException e) {
-            System.err.println("Integer arguments expected");
+        try (HelloServer server = new HelloUDPServer()) {
+            server.start(parseArgument(args[0], "port"), parseArgument(args[1], "count of threads"));
         }
     }
 

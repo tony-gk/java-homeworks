@@ -1,2 +1,2 @@
 #!/bin/bash
-java -cp .. examples.rmi.Client $@
+java -cp ../../../../.. ru.ifmo.rain.gunkin.bank.Client

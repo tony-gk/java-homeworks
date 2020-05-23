@@ -1,3 +1,3 @@
 #!/bin/bash
-javac -cp .. Server.java Client.java
+javac -cp /home/tony/study/java/lessons/java-homeworks/modules/ru.ifmo.rain.gunkin.bank Server.java Client.java
 #rmic -d $CLASSPATH examples.rmi.RemoteAccount examples.rmi.RemoteBank

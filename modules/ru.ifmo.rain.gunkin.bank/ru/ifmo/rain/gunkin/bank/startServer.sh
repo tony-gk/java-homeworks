@@ -1,5 +1,6 @@
 #!/bin/bash
-export CLASSPATH=..
+export CLASSPATH=../../../../..
 
 rmiregistry &
-java examples.rmi.Server
+sleep 1
+java ru.ifmo.rain.gunkin.bank.Server

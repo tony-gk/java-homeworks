@@ -7,9 +7,9 @@ import java.rmi.RemoteException;
 
 public class Client {
     public static void main(final String... args) throws RemoteException {
-        final RemoteBank bank;
+        final Bank bank;
         try {
-            bank = (RemoteBank) Naming.lookup("//localhost/bank");
+            bank = (Bank) Naming.lookup("//localhost/bank");
         } catch (final NotBoundException e) {
             System.out.println("Bank is not bound");
             return;
@@ -20,7 +20,7 @@ public class Client {
 
         final String accountId = args.length >= 1 ? args[0] : "geo";
 
-        RemoteAccount account = bank.getAccount(accountId);
+        Account account = bank.getAccount(accountId);
         if (account == null) {
             System.out.println("Creating account");
             account = bank.createAccount(accountId);

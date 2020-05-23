@@ -1,20 +1,46 @@
 package ru.ifmo.rain.gunkin.bank;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-public interface RemoteBank extends Remote {
-    /**
-     * Creates a new account with specified identifier if it is not already exists.
-     * @param id account id
-     * @return created or existing account.
-     */
-    RemoteAccount createAccount(String id) throws RemoteException;
+public class RemoteBank implements Bank {
+    private final int port;
+    private final ConcurrentMap<String, Account> accounts = new ConcurrentHashMap<>();
 
-    /**
-     * Returns account by identifier.
-     * @param id account id
-     * @return account with specified identifier or {@code null} if such account does not exists.
-     */
-    RemoteAccount getAccount(String id) throws RemoteException;
+    public RemoteBank(final int port) {
+        this.port = port;
+    }
+
+    public Account createAccount(final String id) throws RemoteException {
+        System.out.println("Creating account " + id);
+        final Account account = new RemoteAccount(id);
+        if (accounts.putIfAbsent(id, account) == null) {
+            UnicastRemoteObject.exportObject(account, port);
+            return account;
+        } else {
+            return getAccount(id);
+        }
+    }
+
+    public Account getAccount(final String id) {
+        System.out.println("Retrieving account " + id);
+        return accounts.get(id);
+    }
+
+    @Override
+    public Person registerPerson(String passportId) throws RemoteException {
+        return null;
+    }
+
+    @Override
+    public Person getLocalPerson(String passportId) throws RemoteException {
+        return null;
+    }
+
+    @Override
+    public Person getRemotePerson(String passportId) throws RemoteException {
+        return null;
+    }
 }
