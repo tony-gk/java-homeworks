@@ -1,4 +1,4 @@
-package ru.ifmo.rain.gunkin.bank;
+package ru.ifmo.rain.gunkin.bank.main;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;

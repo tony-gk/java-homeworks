@@ -1,4 +1,4 @@
-package ru.ifmo.rain.gunkin.bank;
+package ru.ifmo.rain.gunkin.bank.main;
 
 public class RemoteAccount implements Account {
     private final String id;

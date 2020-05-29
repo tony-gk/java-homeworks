@@ -1,4 +1,8 @@
-package ru.ifmo.rain.gunkin.bank;
+package ru.ifmo.rain.gunkin.bank.test;
+
+import ru.ifmo.rain.gunkin.bank.main.Account;
+import ru.ifmo.rain.gunkin.bank.main.Bank;
+import ru.ifmo.rain.gunkin.bank.main.Person;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;

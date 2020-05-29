@@ -1,4 +1,7 @@
-package ru.ifmo.rain.gunkin.bank;
+package ru.ifmo.rain.gunkin.bank.test;
+
+import ru.ifmo.rain.gunkin.bank.main.Bank;
+import ru.ifmo.rain.gunkin.bank.main.RemoteBank;
 
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;

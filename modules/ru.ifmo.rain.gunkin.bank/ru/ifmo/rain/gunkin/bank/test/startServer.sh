@@ -1,7 +1,5 @@
 #!/bin/bash
-export CLASSPATH=../../../../..
-
-javac -cp ../../../../.. Server.java
+export CLASSPATH=../../../../../..
 
 rmiregistry &
 sleep 1
