@@ -18,12 +18,13 @@ public class Client {
             return;
         }
 
-        final String accountId = args.length >= 1 ? args[0] : "geo";
+        final String subId = args.length >= 1 ? args[0] : "geo";
+        final String passportId = args.length >= 2 ? args[1] : "pao";
 
-        Account account = bank.getAccount(accountId);
+        Account account = bank.getAccount(subId, passportId);
         if (account == null) {
             System.out.println("Creating account");
-            account = bank.createAccount(accountId);
+            account = bank.createAccount(subId, passportId);
         } else {
             System.out.println("Account already exists");
         }
@@ -32,5 +33,13 @@ public class Client {
         System.out.println("Adding money");
         account.setAmount(account.getAmount() + 100);
         System.out.println("Money: " + account.getAmount());
+
+        Person localPerson =  bank.getLocalPerson(passportId);
+        Person remotePerson = bank.getRemotePerson(passportId);
+        remotePerson.getAccount(subId).setAmount(remotePerson.getAccount(subId).getAmount() + 1);
+        System.out.println("Remote person updated amount of " + subId + ": " + account.getAmount());
+
+        System.out.println("View of local person " + localPerson.getAccount(subId).getAmount());
+
     }
 }

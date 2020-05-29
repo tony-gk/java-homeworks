@@ -10,4 +10,7 @@ public interface Person extends Remote {
 
     String getPassportId() throws RemoteException;
 
+    Account getAccount(String subId) throws  RemoteException;
+
+    Account createAccount(String subId) throws RemoteException;
 }
