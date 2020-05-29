@@ -17,8 +17,7 @@ public class HelloUDPServer implements HelloServer {
     private DatagramSocket socket;
     private ExecutorService requestHandlerPool;
     private Thread receiver;
-    private AtomicBoolean closed;
-
+    private final AtomicBoolean closed = new AtomicBoolean(true);
 
     /**
      * Starts a new Hello server.
@@ -28,9 +27,14 @@ public class HelloUDPServer implements HelloServer {
      */
     @Override
     public void start(int port, int threadCount) {
+        if (!closed.compareAndSet(true, false)) {
+            throw new IllegalArgumentException("Server is already running");
+        }
+
         try {
             socket = new DatagramSocket(port);
         } catch (SocketException e) {
+            closed.set(true);
             throw new IllegalArgumentException("Failed to create socket", e);
         }
 
@@ -38,7 +42,6 @@ public class HelloUDPServer implements HelloServer {
                 0L, TimeUnit.MICROSECONDS,
                 new LinkedBlockingQueue<>(QUEUE_MAX_SIZE), new ThreadPoolExecutor.DiscardPolicy());
 
-        closed = new AtomicBoolean(false);
         receiver = new Thread(this::receivePackets);
         receiver.start();
     }
@@ -114,9 +117,9 @@ public class HelloUDPServer implements HelloServer {
             Objects.requireNonNull(args[i], "Argument " + i + " is null");
         }
 
-        try (HelloServer server = new HelloUDPServer()) {
-            server.start(parseArgument(args[0], "port"), parseArgument(args[1], "count of threads"));
-        }
+        int port = parseArgument(args[0], "port");
+        int threadCount = parseArgument(args[0], "count of threads");
+        new HelloUDPServer().start(port, threadCount);
     }
 
     private static int parseArgument(String arg, String name) {
