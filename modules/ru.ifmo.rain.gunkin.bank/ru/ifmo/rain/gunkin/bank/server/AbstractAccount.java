@@ -22,4 +22,8 @@ public abstract class AbstractAccount implements Account {
     public synchronized void setAmount(final int amount) {
         this.amount = amount;
     }
+
+    public synchronized void addAmount(final int amount) {
+        this.amount += amount;
+    }
 }
