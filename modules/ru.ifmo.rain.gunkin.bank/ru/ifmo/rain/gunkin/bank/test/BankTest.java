@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BankTest {
-    private static final int PORT = 8888;
+    private static final int PORT = 8887;
     private static final String BANK_URL = "//localhost/bank";
     private static Bank bank;
 
@@ -52,6 +52,12 @@ public class BankTest {
         registry.rebind(BANK_URL, remoteBank);
 
         bank = (Bank) registry.lookup(BANK_URL);
+    }
+
+    @After
+    public void removeBank() throws RemoteException, NotBoundException {
+        registry.unbind(BANK_URL);
+        UnicastRemoteObject.unexportObject(bank, true);
     }
 
     @Test
