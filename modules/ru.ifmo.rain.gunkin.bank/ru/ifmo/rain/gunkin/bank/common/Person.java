@@ -1,4 +1,4 @@
-package ru.ifmo.rain.gunkin.bank.main;
+package ru.ifmo.rain.gunkin.bank.common;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

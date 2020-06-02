@@ -1,4 +1,8 @@
-package ru.ifmo.rain.gunkin.bank.main;
+package ru.ifmo.rain.gunkin.bank.server;
+
+import ru.ifmo.rain.gunkin.bank.common.Account;
+import ru.ifmo.rain.gunkin.bank.common.Bank;
+import ru.ifmo.rain.gunkin.bank.common.Person;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -18,9 +22,11 @@ public class RemoteBank implements Bank {
 
     @Override
     public Account createAccount(String subId, String passportId) throws RemoteException {
-        String accountId = passportId + ":" + subId;
-        System.out.println("Creating account in bank " + accountId);
+        if (persons.get(passportId) == null) {
+            throw new IllegalArgumentException("A person with specified passport id is not registered");
+        }
 
+        String accountId = passportId + ":" + subId;
         RemoteAccount account = new RemoteAccount(accountId);
 
         if (accounts.putIfAbsent(accountId, account) == null) {
@@ -35,14 +41,11 @@ public class RemoteBank implements Bank {
     @Override
     public Account getAccount(String subId, String passportId) {
         String accountId = passportId + ":" + subId;
-        System.out.println("Retrieving account " + accountId);
         return accounts.get(accountId);
     }
 
     @Override
     public Person registerPerson(String firstName, String secondName, String passportId) throws RemoteException {
-        System.out.println("Registering person " + passportId);
-
         RemotePerson person = new RemotePerson(firstName, secondName, passportId, this);
         if (persons.putIfAbsent(passportId, person) == null) {
             UnicastRemoteObject.exportObject(person, port);
@@ -53,9 +56,7 @@ public class RemoteBank implements Bank {
     }
 
     @Override
-    public Person getLocalPerson(String passportId) throws RemoteException {
-        System.out.println("Retrieving local person " + passportId);
-
+    public Person getLocalPerson(String passportId) {
         RemotePerson remotePerson = persons.get(passportId);
         if (remotePerson == null) {
             return null;
@@ -78,7 +79,6 @@ public class RemoteBank implements Bank {
 
     @Override
     public Person getRemotePerson(String passportId) {
-        System.out.println("Retrieving remote person " + passportId);
         return persons.get(passportId);
     }
 }
