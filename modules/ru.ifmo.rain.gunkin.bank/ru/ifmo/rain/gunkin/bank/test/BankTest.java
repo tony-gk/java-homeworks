@@ -16,6 +16,7 @@ import java.rmi.server.UnicastRemoteObject;
 
 
 import static org.junit.Assert.*;
+import static ru.ifmo.rain.gunkin.bank.util.TestUtil.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BankTest {
@@ -66,9 +67,9 @@ public class BankTest {
 
         Person person = bank.registerPerson(FIRST_NAME, SECOND_NAME, PASSPORT_ID);
 
-        checkPerson(person);
-        checkPerson(bank.getLocalPerson(PASSPORT_ID));
-        checkPerson(bank.getRemotePerson(PASSPORT_ID));
+        checkPerson(person, FIRST_NAME, SECOND_NAME, PASSPORT_ID);
+        checkPerson(bank.getLocalPerson(PASSPORT_ID), FIRST_NAME, SECOND_NAME, PASSPORT_ID);
+        checkPerson(bank.getRemotePerson(PASSPORT_ID), FIRST_NAME, SECOND_NAME, PASSPORT_ID);
     }
 
     @Test
@@ -77,7 +78,7 @@ public class BankTest {
         Person remotePerson = bank.getRemotePerson(PASSPORT_ID);
 
         bank.createAccount(SUB_ID, PASSPORT_ID);
-        checkAccountCreated(remotePerson);
+        checkAccountCreated(remotePerson, SUB_ID, bank);
     }
 
     @Test
@@ -85,7 +86,7 @@ public class BankTest {
         Person person = bank.registerPerson(FIRST_NAME, SECOND_NAME, PASSPORT_ID);
 
         person.createAccount(SUB_ID);
-        checkAccountCreated(person);
+        checkAccountCreated(person, SUB_ID, bank);
     }
 
     @Test
@@ -95,7 +96,7 @@ public class BankTest {
         Person localPerson = bank.getLocalPerson(PASSPORT_ID);
         localPerson.createAccount(SUB_ID);
 
-        checkAccount(localPerson.getAccount(SUB_ID));
+        checkAccount(localPerson.getAccount(SUB_ID), ACCOUNT_ID);
     }
 
     @Test
@@ -141,26 +142,4 @@ public class BankTest {
         assertEquals(remoteAccount.getAmount(), oldAmount);
     }
 
-    private void checkAccountCreated(Person remotePerson) throws RemoteException {
-        Account bankAccount = bank.getAccount(SUB_ID, remotePerson.getPassportId());
-        Account remoteAccount = remotePerson.getAccount(SUB_ID);
-        Account localAccount = bank.getLocalPerson(remotePerson.getPassportId()).getAccount(SUB_ID);
-
-        checkAccount(bankAccount);
-        checkAccount(remoteAccount);
-        checkAccount(localAccount);
-    }
-
-    private void checkPerson(Person person) throws RemoteException {
-        assertNotNull(person);
-        assertEquals(person.getFirstName(), FIRST_NAME);
-        assertEquals(person.getSecondName(), SECOND_NAME);
-        assertEquals(person.getPassportId(), PASSPORT_ID);
-    }
-
-    private void checkAccount(Account account) throws RemoteException {
-        assertNotNull(account);
-        assertEquals(account.getId(), ACCOUNT_ID);
-        assertEquals(account.getAmount(), 0);
-    }
 }

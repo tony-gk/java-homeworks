@@ -1,25 +1,21 @@
 package ru.ifmo.rain.gunkin.bank.server;
 
 import ru.ifmo.rain.gunkin.bank.common.Bank;
-import ru.ifmo.rain.gunkin.bank.server.RemoteBank;
+import ru.ifmo.rain.gunkin.bank.util.ServerUtil;
 
-import java.net.PortUnreachableException;
-import java.rmi.*;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.*;
-import java.util.Objects;
+import java.rmi.server.UnicastRemoteObject;
+
 
 public class Server {
-    private static final String BANK_URL = "//localhost/bank";
-    private static final int PORT = 8992;
-
     public static void main(final String... args) throws RemoteException {
-        Registry registry = LocateRegistry.createRegistry(PORT);
+        Registry registry = LocateRegistry.createRegistry(ServerUtil.PORT);
 
-        Bank bank = new RemoteBank(PORT);
-        UnicastRemoteObject.exportObject(bank, PORT);
-        registry.rebind(BANK_URL, bank);
+        Bank bank = new RemoteBank(ServerUtil.PORT);
+        UnicastRemoteObject.exportObject(bank, ServerUtil.PORT);
+        registry.rebind(ServerUtil.BANK_URL, bank);
 
         System.out.println("Server started");
     }
