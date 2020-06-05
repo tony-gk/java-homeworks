@@ -4,47 +4,73 @@ import ru.ifmo.rain.gunkin.bank.common.Account;
 import ru.ifmo.rain.gunkin.bank.common.Bank;
 import ru.ifmo.rain.gunkin.bank.common.Person;
 
+import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Objects;
 
 public class Client {
-    public static void main(final String... args) throws RemoteException {
-        final Bank bank;
-        try {
-            Registry registry = LocateRegistry.getRegistry(8888);
-            bank = (Bank) registry.lookup("//localhost/bank");
-        } catch (final NotBoundException e) {
-            System.out.println("Bank is not bound");
-            return;
-        } //catch (final MalformedURLException e) {
-//            System.out.println("Bank URL is invalid");
-//            return;
-//        }
+    private static final int PORT = 8992;
+    private static final String BANK_URL = "//localhost/bank";
 
-        final String subId = args.length >= 1 ? args[0] : "geo";
-        final String passportId = args.length >= 2 ? args[1] : "pao";
+    public static void run(String firstName, String secondName,
+                           String passportId, String subId, int amount) throws RemoteException, NotBoundException {
 
-        Account account = bank.getAccount(subId, passportId);
-        if (account == null) {
-            System.out.println("Creating account");
-            account = bank.createAccount(subId, passportId);
+        Registry registry = LocateRegistry.getRegistry(PORT);
+        Bank bank = (Bank) registry.lookup(BANK_URL);
+
+        Person person = bank.getRemotePerson(passportId);
+        if (person == null) {
+            person = bank.registerPerson(firstName, secondName, passportId);
+            System.out.println("New person registered");
         } else {
-            System.out.println("Account already exists");
+            if (!firstName.equals(person.getFirstName())) {
+                System.out.println("Specified first name doesn't match " +
+                        "the first name of the person registered with specified passport id");
+                return;
+            }
+
+            if (!secondName.equals(person.getSecondName())) {
+                System.out.println("Specified second name doesn't match " +
+                        "the second name of the person registered with specified passport id");
+                return;
+            }
         }
-        System.out.println("Account id: " + account.getId());
-        System.out.println("Money: " + account.getAmount());
-        System.out.println("Adding money");
-        account.setAmount(account.getAmount() + 100);
-        System.out.println("Money: " + account.getAmount());
 
-        Person localPerson =  bank.getLocalPerson(passportId);
-        Person remotePerson = bank.getRemotePerson(passportId);
-        remotePerson.getAccount(subId).setAmount(remotePerson.getAccount(subId).getAmount() + 1);
-        System.out.println("Remote person updated amount of " + subId + ": " + account.getAmount());
+        Account account = person.getAccount(subId);
+        if (account == null) {
+            account = person.createAccount(subId);
+            System.out.println("New account created");
+        }
 
-        System.out.println("View of local person " + localPerson.getAccount(subId).getAmount());
+        account.addAmount(amount);
+        System.out.println("Account balance: " + account.getAmount());
+    }
 
+    public static void main(String[] args) throws RemoteException, NotBoundException {
+        Objects.requireNonNull(args, "Arguments array is null");
+        if (args.length != 5) {
+            throw new IllegalArgumentException("Expected 5 arguments");
+        }
+
+        for (int i = 0; i < args.length; i++) {
+            Objects.requireNonNull(args[i], "Argument " + i + " is null");
+        }
+
+        String firstName = args[0];
+        String secondName = args[1];
+        String passportId = args[2];
+        String subId = args[3];
+        int amount;
+
+        try {
+            amount = Integer.parseInt(args[4]);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Expected integer amount, but was " + args[4], e);
+        }
+
+        Client.run(firstName, secondName, passportId, subId, amount);
     }
 }

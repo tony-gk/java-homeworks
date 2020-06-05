@@ -3,35 +3,24 @@ package ru.ifmo.rain.gunkin.bank.server;
 import ru.ifmo.rain.gunkin.bank.common.Bank;
 import ru.ifmo.rain.gunkin.bank.server.RemoteBank;
 
+import java.net.PortUnreachableException;
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.*;
+import java.util.Objects;
 
 public class Server {
-    private final static int PORT = 8888;
+    private static final String BANK_URL = "//localhost/bank";
+    private static final int PORT = 8992;
 
-    public static void main(final String... args) {
-        Registry registry;
-        try {
-            registry = LocateRegistry.createRegistry(PORT);
-        } catch (RemoteException e) {
-            System.out.println("Cannot create registry: " + e.getMessage());
-            return;
-        }
+    public static void main(final String... args) throws RemoteException {
+        Registry registry = LocateRegistry.createRegistry(PORT);
 
-        final Bank bank = new RemoteBank(PORT);
-        try {
-            UnicastRemoteObject.exportObject(bank, PORT);
-//            Naming.rebind("//localhost/bank", bank);
-            registry.rebind("//localhost/bank", bank);
-        } catch (final RemoteException e) {
-            System.out.println("Cannot export object: " + e.getMessage());
-            e.printStackTrace();
-        }
-//        catch (final MalformedURLException e) {
-//            System.out.println("Malformed URL");
-//        }
+        Bank bank = new RemoteBank(PORT);
+        UnicastRemoteObject.exportObject(bank, PORT);
+        registry.rebind(BANK_URL, bank);
+
         System.out.println("Server started");
     }
 }
