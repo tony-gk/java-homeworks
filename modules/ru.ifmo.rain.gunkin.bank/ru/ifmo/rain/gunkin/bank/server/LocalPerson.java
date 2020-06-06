@@ -4,19 +4,30 @@ import ru.ifmo.rain.gunkin.bank.common.Account;
 import ru.ifmo.rain.gunkin.bank.common.Person;
 
 import java.io.Serializable;
-import java.util.Map;
+import java.rmi.RemoteException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class LocalPerson implements Person, Serializable {
     private final String firstName;
     private final String secondName;
     private final String passportId;
-    private final Map<String, LocalAccount> accounts;
+    private final ConcurrentMap<String, LocalAccount> accounts;
 
-    public LocalPerson(RemotePerson other, Map<String, LocalAccount> accounts) {
-        this.firstName = other.getFirstName();
-        this.secondName = other.getSecondName();
-        this.passportId = other.getPassportId();
-        this.accounts = accounts;
+    public LocalPerson(RemotePerson remotePerson) throws RemoteException {
+        this.firstName = remotePerson.getFirstName();
+        this.secondName = remotePerson.getSecondName();
+        this.passportId = remotePerson.getPassportId();
+        this.accounts = new ConcurrentHashMap<>();
+
+        for (String subId  : remotePerson.getAccountSubIds()) {
+            Account remoteAccount = remotePerson.getAccount(subId);
+
+            LocalAccount localAccount = new LocalAccount(remoteAccount.getId());
+            localAccount.setAmount(remoteAccount.getAmount());
+            accounts.put(subId, localAccount);
+        }
     }
 
     @Override
@@ -47,5 +58,10 @@ public class LocalPerson implements Person, Serializable {
             accounts.put(subId, account);
         }
         return account;
+    }
+
+    @Override
+    public Set<String> getAccountSubIds() {
+        return accounts.keySet();
     }
 }

@@ -6,14 +6,11 @@ import ru.ifmo.rain.gunkin.bank.common.Person;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class RemoteBank implements Bank {
     private final int port;
-    private final ConcurrentMap<String, RemoteAccount> accounts = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, RemotePerson> persons = new ConcurrentHashMap<>();
 
     public RemoteBank(int port) {
@@ -22,31 +19,27 @@ public class RemoteBank implements Bank {
 
     @Override
     public Account createAccount(String subId, String passportId) throws RemoteException {
-        if (persons.get(passportId) == null) {
+        Person person = persons.get(passportId);
+        if (person == null) {
             throw new IllegalArgumentException("A person with specified passport id is not registered");
         }
 
-        String accountId = passportId + ":" + subId;
-        RemoteAccount account = new RemoteAccount(accountId);
-
-        if (accounts.putIfAbsent(accountId, account) == null) {
-            UnicastRemoteObject.exportObject(account, port);
-            return account;
-        } else {
-            return getAccount(subId, passportId);
-        }
+        return person.createAccount(subId);
     }
 
 
     @Override
-    public Account getAccount(String subId, String passportId) {
-        String accountId = passportId + ":" + subId;
-        return accounts.get(accountId);
+    public Account getAccount(String subId, String passportId) throws RemoteException {
+        Person person = persons.get(passportId);
+        if (person == null) {
+            throw new IllegalArgumentException("A person with specified passport id is not registered");
+        }
+        return person.getAccount(subId);
     }
 
     @Override
     public Person registerPerson(String firstName, String secondName, String passportId) throws RemoteException {
-        RemotePerson person = new RemotePerson(firstName, secondName, passportId, this);
+        RemotePerson person = new RemotePerson(firstName, secondName, passportId, port);
         if (persons.putIfAbsent(passportId, person) == null) {
             UnicastRemoteObject.exportObject(person, port);
             return person;
@@ -56,25 +49,12 @@ public class RemoteBank implements Bank {
     }
 
     @Override
-    public Person getLocalPerson(String passportId) {
-        RemotePerson remotePerson = persons.get(passportId);
-        if (remotePerson == null) {
+    public Person getLocalPerson(String passportId) throws RemoteException {
+        RemotePerson person = persons.get(passportId);
+        if (person == null) {
             return null;
         }
-
-        Map<String, LocalAccount> personAccounts = new HashMap<>();
-
-        for (Map.Entry<String, RemoteAccount> e : accounts.entrySet()) {
-            String accountId = e.getKey();
-            if (accountId.startsWith(passportId)) {
-                LocalAccount localAccount = new LocalAccount(e.getValue());
-                personAccounts.put(
-                        accountId.substring(accountId.indexOf(':') + 1),
-                        localAccount);
-            }
-        }
-
-        return new LocalPerson(remotePerson, personAccounts);
+        return new LocalPerson(person);
     }
 
     @Override
