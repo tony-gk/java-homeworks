@@ -15,7 +15,7 @@ import java.util.Objects;
 public class Client {
 
     public static void run(String firstName, String secondName,
-                           String passportId, String subId, int amount) throws RemoteException, NotBoundException {
+                           String passportId, String subId, int amount) throws ClientException, RemoteException, NotBoundException {
 
         Registry registry = LocateRegistry.getRegistry(ServerUtil.PORT);
         Bank bank = (Bank) registry.lookup(ServerUtil.BANK_URL);
@@ -26,15 +26,13 @@ public class Client {
             System.out.println("New person registered");
         } else {
             if (!firstName.equals(person.getFirstName())) {
-                System.out.println("Specified first name doesn't match " +
+                throw new ClientException("Specified first name doesn't match " +
                         "the first name of the person registered with specified passport id");
-                return;
             }
 
             if (!secondName.equals(person.getSecondName())) {
-                System.out.println("Specified second name doesn't match " +
+                throw new ClientException("Specified second name doesn't match " +
                         "the second name of the person registered with specified passport id");
-                return;
             }
         }
 
@@ -52,7 +50,7 @@ public class Client {
         System.out.println("Account balance: " + account.getAmount());
     }
 
-    public static void main(String[] args) throws RemoteException, NotBoundException {
+    public static void main(String[] args) throws RemoteException, NotBoundException, ClientException {
         Objects.requireNonNull(args, "Arguments array is null");
         if (args.length != 5) {
             throw new IllegalArgumentException("Expected 5 arguments");

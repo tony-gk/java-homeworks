@@ -20,7 +20,7 @@ import static ru.ifmo.rain.gunkin.bank.util.TestUtil.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BankTest {
-    private static final int PORT = 8887;
+    private static final int PORT = 32142;
     private static final String BANK_URL = "//localhost/bank";
     private static Bank bank;
 
@@ -34,11 +34,7 @@ public class BankTest {
 
     @BeforeClass
     public static void startRmi() throws RemoteException {
-        try {
-            registry = LocateRegistry.createRegistry(PORT);
-        } catch (RemoteException e) {
-            registry = LocateRegistry.getRegistry(PORT);
-        }
+        registry = LocateRegistry.createRegistry(PORT);
     }
 
     @AfterClass
