@@ -23,10 +23,8 @@ public class RemoteBank implements Bank {
         if (person == null) {
             throw new IllegalArgumentException("A person with specified passport id is not registered");
         }
-
         return person.createAccount(subId);
     }
-
 
     @Override
     public Account getAccount(String subId, String passportId) throws RemoteException {

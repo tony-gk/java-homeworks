@@ -5,4 +5,5 @@ module ru.ifmo.rain.gunkin.bank {
     exports ru.ifmo.rain.gunkin.bank.server;
     exports ru.ifmo.rain.gunkin.bank.common;
     exports ru.ifmo.rain.gunkin.bank.test;
+    exports ru.ifmo.rain.gunkin.bank.client;
 }

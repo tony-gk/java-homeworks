@@ -16,22 +16,23 @@ public class TestUtil {
         assertEquals(person.getSecondName(), secondName);
         assertEquals(person.getPassportId(), passportId);
     }
-    static public void checkAccountCreated(Person remotePerson, String subId, Bank bank) throws RemoteException {
-        Account bankAccount = bank.getAccount(subId, remotePerson.getPassportId());
-        Account remoteAccount = remotePerson.getAccount(subId);
-        Account localAccount = bank.getLocalPerson(remotePerson.getPassportId()).getAccount(subId);
 
-        String accountId = remotePerson.getPassportId()  + ":" + subId;
+    static public void checkAccountCreated(String passportId, String subId, Bank bank, int amount) throws RemoteException {
+        Account bankAccount = bank.getAccount(subId, passportId);
+        Account remoteAccount = bank.getRemotePerson(passportId).getAccount(subId);
+        Account localAccount = bank.getLocalPerson(passportId).getAccount(subId);
 
-        checkAccount(bankAccount, accountId);
-        checkAccount(remoteAccount, accountId);
-        checkAccount(localAccount, accountId);
+        String accountId = passportId + ":" + subId;
+
+        checkAccount(bankAccount, accountId, amount);
+        checkAccount(remoteAccount, accountId, amount);
+        checkAccount(localAccount, accountId, amount);
     }
 
 
-    static public void checkAccount(Account account, String accountId) throws RemoteException {
+    static public void checkAccount(Account account, String accountId, int amount) throws RemoteException {
         assertNotNull(account);
         assertEquals(account.getId(), accountId);
-        assertEquals(account.getAmount(), 0);
+        assertEquals(account.getAmount(), amount);
     }
 }
