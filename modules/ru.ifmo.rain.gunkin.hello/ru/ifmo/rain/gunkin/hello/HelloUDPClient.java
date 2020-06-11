@@ -74,7 +74,7 @@ public class HelloUDPClient implements HelloClient {
                             socket.receive(responsePacket);
 
                             String response = new String(responsePacket.getData(), responsePacket.getOffset(), responsePacket.getLength(), StandardCharsets.UTF_8);
-                            if (isValidEvilResponse(response, threadNumber, i)) {
+                            if (ClientUtils.isValidEvilResponse(response, threadNumber, i)) {
                                 System.out.println("Response: " + response);
                                 break;
                             }
@@ -90,9 +90,6 @@ public class HelloUDPClient implements HelloClient {
             }
         }
 
-        private boolean isValidEvilResponse(String response, int threadNumber, int requestNumber) {
-            return response.matches("[\\D]*" + threadNumber + "[\\D]*" + requestNumber + "[\\D]*");
-        }
 
         private DatagramPacket createReceivePacket(DatagramSocket socket) throws SocketException {
             byte[] responseBuffer;
@@ -107,32 +104,14 @@ public class HelloUDPClient implements HelloClient {
         }
     }
 
+
     /**
      * Entry point into the application.
      *
      * @param args Usage: {@code <host> <port> <prefix> <threadCount> <requestCount>}
      */
     public static void main(String[] args) {
-        Objects.requireNonNull(args, "Arguments array is null");
-        if (args.length != 5) {
-            throw new IllegalArgumentException("Expected 5 arguments");
-        }
-
-        for (int i = 0; i < args.length; i++) {
-            Objects.requireNonNull(args[i], "Argument " + i + " is null");
-        }
-
-        int port = parseArgument(args[1], "port");
-        int threadCount = parseArgument(args[3], "count of threads");
-        int requestCount = parseArgument(args[4], "count of requests");
-        new HelloUDPClient().run(args[0], port, args[2], threadCount, requestCount);
+        ClientUtils.parseArgsAndRunClient(args, new HelloUDPClient());
     }
 
-    private static int parseArgument(String arg, String name) {
-        try {
-            return Integer.parseInt(arg);
-        } catch (NumberFormatException e) {
-            throw new NumberFormatException("Expected integer " + name);
-        }
-    }
 }
