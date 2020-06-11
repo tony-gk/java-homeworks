@@ -1,0 +1,9 @@
+#!/bin/bash
+
+base_test_script=$(dirname "$0")/BaseTest
+
+package="hello"
+mode="client-evil"
+class_name="HelloUDPNonblockingClient"
+
+bash "$base_test_script" $package $class_name $mode
