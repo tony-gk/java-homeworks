@@ -97,10 +97,8 @@ public class HelloUDPNonblockingClient implements HelloClient {
                         }
                     }
                 }
-
                 checkForTimeout();
             }
-
             finish();
         }
 
