@@ -60,62 +60,40 @@ public class HelloUDPNonblockingServer implements HelloServer {
             return;
         }
 
-        selectorThread = new Thread(this::startSelecting);
+        selectorThread = new Thread(this::runSelector);
         selectorThread.start();
     }
 
-    private void startSelecting() {
+    private void runSelector() {
         while (!Thread.interrupted()) {
             try {
                 selector.select();
                 if (selector.selectedKeys().isEmpty()) {
                     continue;
                 }
-
                 selector.selectedKeys().clear();
             } catch (ClosedSelectorException e) {
                 return;
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
             }
 
 
             try {
-                if ( serverSelectionKey.isReadable()) {
-//                System.out.println("Read");
-                    buffer.clear();
-
-                    SocketAddress srcAddress;
+                if (serverSelectionKey.isReadable()) {
                     try {
-                        srcAddress = serverChannel.receive(buffer);
+                        receiveRequest();
                     } catch (IOException e) {
                         System.err.println("I/O error occurred during receiving");
                         e.printStackTrace();
                         continue;
                     }
-                    buffer.flip();
-                    String request = new String(buffer.array(), 0, buffer.limit(), StandardCharsets.UTF_8);
-
-//                System.out.println("Read <<" + request + ">>");
-                    requestHandlerPool.submit(() -> handleRequest(request, srcAddress));
                 }
 
                 if (serverSelectionKey.isWritable()) {
-                    Response response;
-                    synchronized (responses) {
-                        response = responses.poll();
-                        if (responses.isEmpty()) {
-                            serverSelectionKey.interestOps(SelectionKey.OP_READ);
-                        }
-                    }
-                    Objects.requireNonNull(response);
-//                System.out.println("Write " + response.message);
-
-                    buffer.clear();
-                    buffer.put(response.message.getBytes(StandardCharsets.UTF_8));
-                    buffer.flip();
-
                     try {
-                        serverChannel.send(buffer, response.destination);
+                        sendResponse();
                     } catch (IOException e) {
                         System.err.println("I/O error occurred during sending");
                         e.printStackTrace();
@@ -124,6 +102,33 @@ public class HelloUDPNonblockingServer implements HelloServer {
             } catch (CancelledKeyException ignored) {
             }
         }
+    }
+
+    private void receiveRequest() throws IOException {
+        buffer.clear();
+        SocketAddress srcAddress = serverChannel.receive(buffer);
+
+        buffer.flip();
+        String request = new String(buffer.array(), 0, buffer.limit(), StandardCharsets.UTF_8);
+
+        requestHandlerPool.submit(() -> handleRequest(request, srcAddress));
+    }
+
+    private void sendResponse() throws IOException {
+        Response response;
+        synchronized (responses) {
+            response = responses.poll();
+            if (responses.isEmpty()) {
+                serverSelectionKey.interestOps(SelectionKey.OP_READ);
+            }
+        }
+        Objects.requireNonNull(response);
+
+        buffer.clear();
+        buffer.put(response.message.getBytes(StandardCharsets.UTF_8));
+        buffer.flip();
+
+        serverChannel.send(buffer, response.destination);
     }
 
 
@@ -173,8 +178,8 @@ public class HelloUDPNonblockingServer implements HelloServer {
     }
 
     private static class Response {
-        final String message;
-        final SocketAddress destination;
+        private final String message;
+        private final SocketAddress destination;
 
         private Response(String message, SocketAddress destination) {
             this.message = message;
